@@ -1,0 +1,1 @@
+*.o *.so *.a *.pyc *.log .DS_Store .vscode/ .idea/

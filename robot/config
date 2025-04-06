@@ -1,0 +1,25 @@
+include "config.path"
+
+thread = 8
+logger = nil
+logpath = "."
+harbor = 1
+address = "127.0.0.1:2526"
+master = "127.0.0.1:2013"
+start = "simplewebsocket"  -- 使用WebSocket示例作为启动服务
+bootstrap = "snlua bootstrap"
+standalone = "0.0.0.0:2013"
+cpath = root.."cservice/?.so"
+-- debug_port = 8172
+-- debug_ip = "127.0.0.1"
+debug_console_port = 8000
+debug_console_host = "127.0.0.1"
+
+-- 登录服务
+login_service = "./robot/login_service.lua"
+
+-- 用户管理服务
+user_mgr_service = "./robot/user_mgr_service.lua"
+
+-- 机器人管理服务
+robot_manager_service = "./robot/robot_manager_service.lua"
