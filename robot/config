@@ -6,7 +6,6 @@ logpath = "."
 harbor = 1
 address = "127.0.0.1:2526"
 master = "127.0.0.1:2013"
-start = "simplewebsocket"  -- 使用WebSocket示例作为启动服务
 bootstrap = "snlua bootstrap"
 standalone = "0.0.0.0:2013"
 cpath = root.."cservice/?.so"
@@ -15,11 +14,21 @@ cpath = root.."cservice/?.so"
 debug_console_port = 8000
 debug_console_host = "127.0.0.1"
 
--- 登录服务
-login_service = "./robot/login_service.lua"
+-- 数据库配置
+mysql_host = "127.0.0.1"
+mysql_port = 3306
+mysql_database = "PlayerDatabase"
+mysql_user = "skynet"
+mysql_password = "Password123"
 
--- 用户管理服务
-user_mgr_service = "./robot/user_mgr_service.lua"
+-- WebSocket配置
+websocket_port = 9948
+websocket_host = "0.0.0.0"
 
--- 机器人管理服务
-robot_manager_service = "./robot/robot_manager_service.lua"
+-- 服务配置
+login_service = "./robot/login_service"
+user_mgr_service = "./robot/user_mgr_service"
+robot_manager_service = "./robot/robot_manager_service"
+
+-- 设置启动服务
+start = "main"

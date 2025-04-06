@@ -1,32 +1,9 @@
 local skynet = require "skynet"
 local websocket = require "http.websocket"
-local mysql = require "skynet.db.mysql"
+local DBManager = require "core.db_manager"
 
 local Robot = {}
 Robot.__index = Robot
-
--- 数据库连接实例
-local db
-
--- 初始化数据库连接
-local function init_mysql()
-    if not db then
-        db = mysql.connect({
-            host = "127.0.0.1",
-            port = 3306,
-            database = "PlayerDatabase",
-            user = "skynet",
-            password = "Password123",
-            max_packet_size = 1024 * 1024,
-            on_connect = function(db)
-                db:query("set charset utf8")
-            end
-        })
-        assert(db, "failed to connect to mysql")
-        skynet.tracelog("mysql", "Database connection initialized")
-    end
-    return db
-end
 
 function Robot.new(id, user_info, host)
     local self = setmetatable({}, Robot)
@@ -43,11 +20,6 @@ function Robot.new(id, user_info, host)
     self.age = math.random(18, 60)
     self.gender = (math.random(1, 2) == 1) and "male" or "female"
     
-    -- 确保数据库连接初始化
-    if not db then
-        db = init_mysql()
-    end
-    
     -- 保存机器人数据到数据库
     self:save_to_db()
     
@@ -55,21 +27,14 @@ function Robot.new(id, user_info, host)
 end
 
 function Robot:save_to_db()
-    if not db then
-        db = init_mysql()
-    end
-    
-    local sql = string.format(
+    local db = DBManager.getInstance()
+    local ok, result = db:query(
         "INSERT INTO robot (robot_id, age, gender) VALUES (%d, %d, '%s') ON DUPLICATE KEY UPDATE age=%d, gender='%s'",
         self.id, self.age, self.gender, self.age, self.gender
     )
     
-    local ok, err = pcall(function()
-        return db:query(sql)
-    end)
-    
     if not ok then
-        skynet.error("Failed to save robot data: ", err)
+        skynet.error("Failed to save robot data: ", result)
     else
         skynet.tracelog("mysql", string.format("Saved robot data: id=%d, age=%d, gender=%s", 
             self.id, self.age, self.gender))
@@ -77,40 +42,26 @@ function Robot:save_to_db()
 end
 
 function Robot:link_to_user(user_id)
-    if not db then
-        db = init_mysql()
-    end
-    
-    local sql = string.format(
+    local db = DBManager.getInstance()
+    local ok, result = db:query(
         "INSERT INTO user_robot_link (user_id, robot_id) VALUES (%d, %d) ON DUPLICATE KEY UPDATE robot_id=robot_id",
         user_id, self.id
     )
     
-    local ok, err = pcall(function()
-        return db:query(sql)
-    end)
-    
     if not ok then
-        skynet.error("Failed to link robot to user: ", err)
+        skynet.error("Failed to link robot to user: ", result)
     else
         skynet.tracelog("mysql", string.format("Linked robot %d to user %d", self.id, user_id))
     end
 end
 
 function Robot:get_user_robots(user_id)
-    if not db then
-        db = init_mysql()
-    end
-    
-    local sql = string.format([[
+    local db = DBManager.getInstance()
+    local ok, result = db:query([[
         SELECT r.* FROM robot r 
         INNER JOIN user_robot_link url ON r.robot_id = url.robot_id 
         WHERE url.user_id = %d
     ]], user_id)
-    
-    local ok, result = pcall(function()
-        return db:query(sql)
-    end)
     
     if not ok then
         skynet.error("Failed to get user robots: ", result)
