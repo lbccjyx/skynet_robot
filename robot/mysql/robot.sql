@@ -32,10 +32,16 @@ CREATE TABLE d_user_robot (
 DROP TABLE IF EXISTS s_struct;
 CREATE TABLE s_struct (
     id INT NOT NULL AUTO_INCREMENT,
+    struct_id INT NOT NULL COMMENT '建筑ID',
     cn_name VARCHAR(50) NOT NULL COMMENT '建筑名称', 
     str_name VARCHAR(50) NOT NULL COMMENT '建筑代称', 
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='建筑基础表';
+
+-- 插入一些基础建筑数据
+INSERT INTO s_struct ( struct_id, cn_name, str_name) VALUES 
+(1, '城墙', "chengqiang"),
+(2, '官府', "guanfu");
 
 -- 建筑升级表
 DROP TABLE IF EXISTS s_struct_upgrade;
@@ -68,15 +74,14 @@ CREATE TABLE d_user_struct (
     upgrade_end_time BIGINT COMMENT '升级结束时间戳',
     current_hp INT NOT NULL COMMENT '当前血量',
     PRIMARY KEY (id),
-    UNIQUE KEY (user_id, struct_id),
-    FOREIGN KEY (user_id) REFERENCES d_user(user_id),
-    FOREIGN KEY (struct_id) REFERENCES s_struct(id)
+    UNIQUE KEY (user_id, struct_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='玩家建筑表';
 
 -- 物品基础表
 DROP TABLE IF EXISTS s_item;
 CREATE TABLE s_item (
     id INT NOT NULL AUTO_INCREMENT,
+    item_id INT NOT NULL COMMENT '物品ID',
     cn_name VARCHAR(50) NOT NULL COMMENT '物品名称',
     str_name VARCHAR(50) NOT NULL COMMENT '物品代称',
     `image` VARCHAR(100) COMMENT '物品图标路径',
@@ -97,10 +102,6 @@ CREATE TABLE d_user_item (
     KEY (item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='玩家物品表';
 
--- 插入一些基础建筑数据
-INSERT INTO s_struct (cn_name, str_name) VALUES 
-('城墙', "chengqiang"),
-('官府', "guanfu");
 
 -- 插入城墙升级数据
 INSERT INTO s_struct_upgrade (struct_id, lev, cost_type1, cost_num1, cost_sec, hp, `image`) VALUES 
@@ -112,11 +113,11 @@ INSERT INTO s_struct_upgrade (struct_id, lev, cost_type1, cost_num1, cost_sec, h
 (2, 3, 'gold', 600, 180, 3200, 'guanfu_lv3.png');
 
 -- 插入基础物品数据
-INSERT INTO s_item (cn_name, str_name, `image`, stackable) VALUES 
-('金币', 'gold', 'gold.png', true),
-('木材', 'wood', 'wood.png', true),
-('石头', 'stone', 'stone.png', true),
-('铁矿', 'iron', 'iron.png', true);
+INSERT INTO s_item (item_id, cn_name, str_name, `image`, stackable) VALUES 
+(1, '金币', 'gold', 'gold.png', true),
+(2, '木材', 'wood', 'wood.png', true),
+(3, '石头', 'stone', 'stone.png', true),
+(4, '铁矿', 'iron', 'iron.png', true);
 
 -- 执行命令： 
 -- mysql -u skynet -pPassword123 -h localhost PlayerDatabase < robot/mysql/robot.sql

@@ -1,5 +1,7 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
+local ConfigManager = require "core.config_manager"
+local DBManager = require "core.db_manager"
 
 local function create_agent_pool()
     local agent = {}
@@ -16,7 +18,26 @@ local function create_agent_pool()
 end
 
 skynet.start(function()
-    -- 先启动用户管理服务
+    -- 初始化数据库连接
+    local db = DBManager.getInstance()
+    local ok, err = db:init()
+    if not ok then
+        skynet.error("Failed to initialize database connection:", err)
+        skynet.exit()
+        return
+    end
+    skynet.error("Database connection initialized successfully")
+    
+    -- 初始化配置管理器
+    local config_manager = ConfigManager.getInstance()
+    ok, err = config_manager:init()
+    if not ok then
+        skynet.error("Failed to initialize config manager:", err)
+    else
+        skynet.error("Config manager initialized successfully")
+    end
+    
+    -- 启动用户管理服务
     local user_mgr = skynet.newservice("user_mgr_service")
     skynet.setenv("SKYNET_USER_MGR_ADDR", tostring(user_mgr))
     skynet.tracelog("init", string.format("robot user_mgr service started with handle: %s", user_mgr))

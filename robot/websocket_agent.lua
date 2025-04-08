@@ -6,7 +6,7 @@ local MessageRouter = require "core.message_router"
 local RobotManager = require "robot_manager"
 local CUser = require "user"
 local DBManager = require "core.db_manager"
-
+local ConfigManager = require "core.config_manager"
 local ws_server
 local message_router
 local host
@@ -100,7 +100,12 @@ skynet.init(function()
     end)
 
     message_router:register_handler(MessageRouter.MSG_TYPES.BUILD_FORMATION, function(client, message)
-        return message
+        skynet.error("Build formation: ", message)
+        local struct_config = GetCfgByIndex("s_struct","str_name", message);
+        if struct_config ~= nil then
+            return struct_config["cn_name"]
+        end
+        return "Invalid struct id"
     end)
 
     message_router:init()
