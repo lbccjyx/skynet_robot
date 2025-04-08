@@ -6,6 +6,7 @@ local sockethelper = require "http.sockethelper"
 local urllib = require "http.url"
 local sproto = require "sproto"
 local sprotoparser = require "sprotoparser"
+local DBManager = require "core.db_manager"
 
 local db
 local host
@@ -33,6 +34,13 @@ local function init_mysql()
             db:query("set charset utf8")
         end
     })
+
+    -- local db = DBManager.getInstance()
+    -- local ok, err = db:init()
+    -- if not ok then
+    --     skynet.error("Failed to initialize database:", err)
+    --     -- 不阻止服务启动，让它在需要时重试
+    -- end
     assert(db, "failed to connect to mysql")
 end
 

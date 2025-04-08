@@ -64,6 +64,33 @@ function connectWebSocket(info) {
     };
 }
 
+
+function sendMessageByType(type, message) {
+    if (!ws) {
+        appendMessage('错误', '未连接到服务器');
+        return;
+    }
+    
+    // 如果提供了参数，使用参数；否则从DOM元素获取
+    const msgType = type !== undefined ? type : (parseInt(document.getElementById('typeInput').value) || 1);
+    const msgContent = message !== undefined ? message : document.getElementById('messageInput').value;
+    
+    if (msgContent) {
+        try {
+            const buffer = encodeMessage(msgType, msgContent);
+            ws.send(buffer);
+            appendMessage('客户端', `类型: ${msgType}, 消息: ${msgContent}`);
+            // 只有在没有提供参数时才清空输入框
+            if (message === undefined) {
+                document.getElementById('messageInput').value = '';
+            }
+        } catch (err) {
+            console.error("Failed to encode message:", err);
+            appendMessage('错误', '消息编码失败');
+        }
+    }
+}
+
 function sendMessage() {
     if (!ws) {
         appendMessage('错误', '未连接到服务器');
@@ -89,3 +116,4 @@ function sendMessage() {
 // 导出需要的函数和变量
 window.connectWebSocket = connectWebSocket;
 window.sendMessage = sendMessage; 
+window.sendMessageByType = sendMessageByType;

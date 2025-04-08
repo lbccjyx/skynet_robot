@@ -99,6 +99,10 @@ skynet.init(function()
         return "Invalid robot count or user not initialized"
     end)
 
+    message_router:register_handler(MessageRouter.MSG_TYPES.BUILD_FORMATION, function(client, message)
+        return message
+    end)
+
     message_router:init()
 end)
 

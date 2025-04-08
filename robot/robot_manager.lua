@@ -59,8 +59,8 @@ function RobotManager:load_user_robots()
     
     -- 查询玩家的所有机器人
     local sql = string.format([[
-        SELECT r.* FROM robot r 
-        INNER JOIN user_robot_link url ON r.robot_id = url.robot_id 
+        SELECT r.* FROM d_robot r 
+        INNER JOIN d_user_robot_link url ON r.robot_id = url.robot_id 
         WHERE url.user_id = %d
     ]], self.user_id)
     
@@ -109,7 +109,7 @@ function RobotManager:create_robot(robot_id)
     
     -- 保存机器人数据
     local sql = string.format(
-        "INSERT INTO robot (robot_id, age, gender) VALUES (%d, %d, '%s')",
+        "INSERT INTO d_robot (robot_id, age, gender) VALUES (%d, %d, '%s')",
         robot_id, robot.age, robot.gender
     )
     
@@ -124,7 +124,7 @@ function RobotManager:create_robot(robot_id)
     
     -- 关联到用户
     sql = string.format(
-        "INSERT INTO user_robot_link (user_id, robot_id) VALUES (%d, %d)",
+        "INSERT INTO d_user_robot_link (user_id, robot_id) VALUES (%d, %d)",
         self.user_id, robot_id
     )
     
@@ -135,7 +135,7 @@ function RobotManager:create_robot(robot_id)
     if not ok then
         skynet.error("Failed to link robot to user: ", err)
         -- 删除已创建的机器人数据
-        db:query(string.format("DELETE FROM robot WHERE robot_id = %d", robot_id))
+        db:query(string.format("DELETE FROM d_robot WHERE robot_id = %d", robot_id))
         return false
     end
     

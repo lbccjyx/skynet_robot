@@ -29,7 +29,7 @@ end
 function Robot:save_to_db()
     local db = DBManager.getInstance()
     local ok, result = db:query(
-        "INSERT INTO robot (robot_id, age, gender) VALUES (%d, %d, '%s') ON DUPLICATE KEY UPDATE age=%d, gender='%s'",
+        "INSERT INTO d_user_robot (robot_id, age, gender) VALUES (%d, %d, '%s') ON DUPLICATE KEY UPDATE age=%d, gender='%s'",
         self.id, self.age, self.gender, self.age, self.gender
     )
     
@@ -44,7 +44,7 @@ end
 function Robot:link_to_user(user_id)
     local db = DBManager.getInstance()
     local ok, result = db:query(
-        "INSERT INTO user_robot_link (user_id, robot_id) VALUES (%d, %d) ON DUPLICATE KEY UPDATE robot_id=robot_id",
+        "INSERT INTO d_user_robot_link (user_id, robot_id) VALUES (%d, %d) ON DUPLICATE KEY UPDATE robot_id=robot_id",
         user_id, self.id
     )
     
@@ -58,8 +58,8 @@ end
 function Robot:get_user_robots(user_id)
     local db = DBManager.getInstance()
     local ok, result = db:query([[
-        SELECT r.* FROM robot r 
-        INNER JOIN user_robot_link url ON r.robot_id = url.robot_id 
+        SELECT r.* FROM d_user_robot r 
+        INNER JOIN d_user_robot_link url ON r.robot_id = url.robot_id 
         WHERE url.user_id = %d
     ]], user_id)
     
@@ -78,12 +78,17 @@ function Robot:send_message(msg_type, content)
 end
 
 function Robot:start()
-    self.timer = true
-    self.state = "active"
-    self:schedule_next_message()
+    skynet.error("robot_say_hello: ", skynet.getenv("robot_say_hello"))
+    if skynet.getenv("robot_say_hello") == "true" then
+        self.timer = true
+        self.state = "active"
+        self:schedule_next_message()
+    end
 end
 
 function Robot:schedule_next_message()
+
+
     if not self.timer then return end
     
     -- 发送消息

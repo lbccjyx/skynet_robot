@@ -4,6 +4,12 @@
     <title>Skynet WebSocket Client</title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/proto.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/websocket.js"></script>
+    <script src="js/ui.js"></script>
 </head>
 <body>
     <div id="loginPanel">
@@ -16,8 +22,8 @@
             <label>密码:</label>
             <input type="password" id="loginPassword">
         </div>
-        <button onclick="login()">登录</button>
-        <p>还没有账号？<span class="switch-form" onclick="showRegister()">注册</span></p>
+        <button id="loginBtn">登录</button>
+        <p>还没有账号？<span class="switch-form" id="showRegisterBtn">注册</span></p>
     </div>
 
     <div id="registerPanel" style="display: none;">
@@ -34,37 +40,19 @@
             <label>确认密码:</label>
             <input type="password" id="confirmPassword">
         </div>
-        <button onclick="register()">注册</button>
-        <p>已有账号？<span class="switch-form" onclick="showLogin()">登录</span></p>
+        <button id="registerBtn">注册</button>
+        <p>已有账号？<span class="switch-form" id="showLoginBtn">登录</span></p>
     </div>
 
-    <div id="mainPanel">
-        <div class="help">
-            <h3>机器人控制面板</h3>
-            <p>使用说明：</p>
-            <ul>
-                <li>类型1：回显消息 - 服务器会返回相同的消息</li>
-                <li>类型2：机器人控制 - 在消息框中输入数字N，将创建N个机器人</li>
-            </ul>
-            <p>机器人特性：</p>
-            <ul>
-                <li>每个机器人有自己的状态：空闲(idle)、活动(active)、休眠(sleeping)</li>
-                <li>机器人会随机发送不同类型的消息</li>
-                <li>机器人有20%的概率进入休眠状态，3秒后自动醒来</li>
-                <li>消息发送间隔随机在1-3秒之间</li>
-            </ul>
-        </div>
+    <div id="gamePanel" style="display: none;">
+        <div id="gameContainer"></div>
         <div id="messageArea"></div>
         <div id="inputArea">
             <input type="number" id="typeInput" placeholder="消息类型" value="1">
             <input type="text" id="messageInput" placeholder="输入消息...">
-            <button onclick="sendMessage()">发送</button>
-            <button onclick="logout()" style="width: auto;">登出</button>
+            <button id="sendBtn">发送</button>
+            <button id="logoutBtn">登出</button>
         </div>
     </div>
-
-    <script src="js/proto.js"></script>
-    <script src="js/websocket.js"></script>
-    <script src="js/ui.js"></script>
 </body>
 </html>

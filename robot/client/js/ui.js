@@ -1,16 +1,36 @@
 // UI 状态切换函数
 function showLogin() {
-    document.getElementById('registerPanel').style.display = 'none';
-    document.getElementById('loginPanel').style.display = 'block';
+    const registerPanel = document.getElementById('registerPanel');
+    const loginPanel = document.getElementById('loginPanel');
+    
+    if (registerPanel) {
+        registerPanel.style.display = 'none';
+    }
+    if (loginPanel) {
+        loginPanel.style.display = 'block';
+    }
 }
 
 function showRegister() {
-    document.getElementById('loginPanel').style.display = 'none';
-    document.getElementById('registerPanel').style.display = 'block';
+    const loginPanel = document.getElementById('loginPanel');
+    const registerPanel = document.getElementById('registerPanel');
+    
+    if (loginPanel) {
+        loginPanel.style.display = 'none';
+    }
+    if (registerPanel) {
+        registerPanel.style.display = 'block';
+    }
 }
 
 // 消息显示函数
 function appendMessage(sender, message) {
+    const messageArea = document.getElementById('messageArea');
+    if (!messageArea) {
+        console.warn('Message area not found');
+        return;
+    }
+    
     const div = document.createElement('div');
     div.textContent = `${sender}: ${message}`;
     
@@ -24,7 +44,6 @@ function appendMessage(sender, message) {
         div.className = `message ${sender.toLowerCase()}`;
     }
     
-    const messageArea = document.getElementById('messageArea');
     messageArea.appendChild(div);
     messageArea.scrollTop = messageArea.scrollHeight;
 }
@@ -36,7 +55,7 @@ async function login() {
     
     try {
         const buffer = encodeSprotoAuth(2, username, password);  // type 2 for login
-        const response = await fetch('http://192.168.3.43:8080/auth', {
+        const response = await fetch(`${SERVER_CONFIG.getAuthUrl()}/auth`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-sproto',
@@ -67,15 +86,22 @@ function handleLoginResponse(response) {
         // 解析登录响应
         const wsInfo = {
             token: response.message,  // 使用msg作为token
-            ws_host: `ws://192.168.3.43:9948/test_websocket`
+            ws_host: `${SERVER_CONFIG.getWsUrl()}/test_websocket`
         };
         
         // 连接WebSocket
         connectWebSocket(wsInfo);
         
-        // 显示主面板
-        document.getElementById('loginPanel').style.display = 'none';
-        document.getElementById('mainPanel').style.display = 'block';
+        // 显示游戏界面
+        if (typeof window.showGame === 'function') {
+            window.showGame();
+        } else {
+            console.error('showGame function is not defined');
+            // 降级处理：直接显示游戏面板
+            document.getElementById('loginPanel').style.display = 'none';
+            document.getElementById('registerPanel').style.display = 'none';
+            document.getElementById('gamePanel').style.display = 'block';
+        }
         
         appendMessage("系统", "登录成功！");
     } else {
@@ -96,7 +122,7 @@ async function register() {
     
     try {
         const buffer = encodeSprotoAuth(1, username, password);  // type 1 for register
-        const response = await fetch('http://192.168.3.43:8080/auth', {
+        const response = await fetch(`${SERVER_CONFIG.getAuthUrl()}/auth`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-sproto',
@@ -112,10 +138,10 @@ async function register() {
         const responseData = decodeSprotoAuthResponse(responseBuffer);
         
         if (responseData.code === 200) {
-            alert('注册成功，请登录');
+            alert('注册成功！请登录');
             showLogin();
         } else {
-            alert(responseData.msg);
+            alert(responseData.message);
         }
     } catch (error) {
         console.error('Register error:', error);
@@ -125,24 +151,79 @@ async function register() {
 
 // 登出函数
 function logout() {
+    // 断开WebSocket连接
     if (ws) {
         ws.close();
         ws = null;
     }
-    currentUser = null;
-    document.getElementById('mainPanel').style.display = 'none';
-    document.getElementById('loginPanel').style.display = 'block';
-    document.getElementById('messageArea').innerHTML = '';
+    
+    // 隐藏游戏界面
+    hideGame();
+    
+    // 显示登录面板
+    showLogin();
+    
+    appendMessage("系统", "已登出");
 }
 
-// 事件监听器设置
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('messageInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
-    });
-});
+// 初始化事件监听器
+function initializeEventListeners() {
+    // 登录按钮
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', login);
+    }
+
+    // 注册按钮
+    const registerBtn = document.getElementById('registerBtn');
+    if (registerBtn) {
+        registerBtn.addEventListener('click', register);
+    }
+
+    // 显示注册按钮
+    const showRegisterBtn = document.getElementById('showRegisterBtn');
+    if (showRegisterBtn) {
+        showRegisterBtn.addEventListener('click', showRegister);
+    }
+
+    // 显示登录按钮
+    const showLoginBtn = document.getElementById('showLoginBtn');
+    if (showLoginBtn) {
+        showLoginBtn.addEventListener('click', showLogin);
+    }
+
+    // 登出按钮
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
+    }
+
+    // 发送消息按钮
+    const sendBtn = document.getElementById('sendBtn');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', sendMessage);
+    }
+
+    // 消息输入框回车事件
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    }
+}
+
+// 等待DOM加载完成后再初始化
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeEventListeners);
+} else {
+    initializeEventListeners();
+}
+
+// 初始化时显示登录面板
+showLogin();
 
 // 导出需要的函数
 window.showLogin = showLogin;
