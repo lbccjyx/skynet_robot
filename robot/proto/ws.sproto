@@ -23,3 +23,23 @@
     reason 0 : string
 }
 
+.NormalPos{
+    type 0: integer
+    pos_L_U_x 1:integer
+    pos_L_U_y 2:integer
+    pos_R_U_x 3:integer
+    pos_R_U_y 4:integer
+    pos_L_D_x 5:integer
+    pos_L_D_y 6:integer
+    pos_R_D_x 7:integer
+    pos_R_D_y 8:integer
+}
+
+.RobotPos {
+    type 0 : integer
+    robot_id:1 integer
+    posX 2 : integer
+    posY 3 : integer
+    speed 4 : integer
+    status 5 : integer
+}
