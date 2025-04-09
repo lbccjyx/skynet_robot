@@ -1,21 +1,19 @@
 local skynet = require "skynet"
 local DBManager = require "core.db_manager"
+local sharedata = require "skynet.sharedata"
 
 local ConfigManager = {}
 ConfigManager.__index = ConfigManager
 
 local instance = nil
 
--- 配置缓存
-local config_cache = {}
-
 -- 配置表结构定义
 -- 格式: {表名 = {主键字段名, [二级键字段名, 三级键字段名, ...]}}
 -- 或者: {表名 = {{索引字段1, 索引字段2, ...}, {主键字段名, [二级键字段名, 三级键字段名, ...]}}
 local config_structure = {
     ["s_struct"] = {
-        -- 通过id索引
-        {"id"},
+        -- 通过struct_id索引
+        {"struct_id"},
         -- 通过str_name索引
         {"str_name"}
     },
@@ -49,11 +47,14 @@ end
 -- 加载所有配置表
 function ConfigManager:loadAllConfigs()
     local db = DBManager.getInstance()
+    local config_cache = {}
     
     -- 遍历配置表结构定义，加载所有配置表
     for table_name, structure in pairs(config_structure) do
+        print(string.format("Loading config table:%s", table_name))
         local ok, result = db:query("SELECT * FROM " .. table_name)
         if ok then
+            print(string.format("Query success, result count:%d", #result))
             config_cache[table_name] = {}
             
             -- 处理结果
@@ -62,16 +63,19 @@ function ConfigManager:loadAllConfigs()
                 if type(structure[1]) == "table" then
                     -- 多索引结构
                     for _, index_fields in ipairs(structure) do
-                        local current = config_cache[table_name]
                         local first_field = index_fields[1]
                         
                         -- 创建索引目录
-                        if not current[first_field] then
-                            current[first_field] = {}
+                        if not config_cache[table_name][first_field] then
+                            config_cache[table_name][first_field] = {}
                         end
                         
                         -- 存储数据
-                        current[first_field][row[first_field]] = row
+                        if row[first_field] then
+                            print(string.format("table_name:%s first_field:%s row[first_field]:%s", 
+                                table_name, first_field, row[first_field]))
+                            config_cache[table_name][first_field][row[first_field]] = row
+                        end
                     end
                 else
                     -- 单索引结构
@@ -99,17 +103,20 @@ function ConfigManager:loadAllConfigs()
         end
     end
     
+    -- 将配置数据存储到sharedata中
+    sharedata.new("config_cache", config_cache)
+    
     skynet.error("Config tables loaded successfully")
 end
 
 -- 重新加载所有配置
 function ConfigManager:reloadAllConfigs()
-    config_cache = {}
     self:loadAllConfigs()
 end
 
 -- 获取配置（支持多级键）
 function ConfigManager:getConfig(table_name, ...)
+    local config_cache = sharedata.query("config_cache")
     if not config_cache[table_name] then
         return nil
     end
@@ -129,11 +136,29 @@ end
 
 -- 通过指定索引字段获取配置
 function ConfigManager:getConfigByIndex(table_name, index_field, index_value)
-    if not config_cache[table_name] or not config_cache[table_name][index_field] then
+    print("**********ConfigManager:getConfigByIndex**********")
+    local config_cache = sharedata.query("config_cache")
+    if not config_cache then
+        print("config_cache is nil")
         return nil
     end
     
-    return config_cache[table_name][index_field][index_value]
+    if not config_cache[table_name] then
+        print("config_cache[table_name] is nil")
+        return nil
+    end
+    
+    if not config_cache[table_name][index_field] then
+        print("config_cache[table_name][index_field] is nil")
+        return nil
+    end
+    
+    local result = config_cache[table_name][index_field][index_value]
+    if not result then
+        print("config_cache[table_name][index_field][index_value] is nil")
+    end
+    
+    return result
 end
 
 -- 全局访问函数

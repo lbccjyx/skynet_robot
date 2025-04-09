@@ -35,6 +35,8 @@ CREATE TABLE s_struct (
     struct_id INT NOT NULL COMMENT '建筑ID',
     cn_name VARCHAR(50) NOT NULL COMMENT '建筑名称', 
     str_name VARCHAR(50) NOT NULL COMMENT '建筑代称', 
+    INDEX (struct_id),
+    INDEX (str_name),
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='建筑基础表';
 

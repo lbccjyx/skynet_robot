@@ -13,7 +13,7 @@ local host
 
 skynet.init(function()
     -- 加载sproto文件
-    local f = io.open("./examples/proto/ws.sproto", "r")
+    local f = io.open("./robot/proto/ws.sproto", "r")
     local content = f:read("*a")
     f:close()
     
@@ -103,7 +103,8 @@ skynet.init(function()
         skynet.error("Build formation: ", message)
         local struct_config = GetCfgByIndex("s_struct","str_name", message);
         if struct_config ~= nil then
-            return struct_config["cn_name"]
+            local str = string.format("%s,%s,%s", struct_config["cn_name"], struct_config["id"], struct_config["str_name"])
+            return str
         end
         return "Invalid struct id"
     end)
