@@ -1,6 +1,6 @@
 .package {
     type 0 : integer
-    message 1 : string
+    session 1 : integer
 }
 
 .Auth {
@@ -23,23 +23,26 @@
     reason 0 : string
 }
 
-.NormalPos{
-    type 0: integer
-    pos_L_U_x 1:integer
-    pos_L_U_y 2:integer
-    pos_R_U_x 3:integer
-    pos_R_U_y 4:integer
-    pos_L_D_x 5:integer
-    pos_L_D_y 6:integer
-    pos_R_D_x 7:integer
-    pos_R_D_y 8:integer
+.NormalPos {
+    pos_L_U_x 0 : integer
+    pos_L_U_y 1 : integer
+    pos_R_U_x 2 : integer
+    pos_R_U_y 3 : integer
+    pos_L_D_x 4 : integer
+    pos_L_D_y 5 : integer
+    pos_R_D_x 6 : integer
+    pos_R_D_y 7 : integer
 }
 
 .RobotPos {
+    robot_id 0 : integer
+    posX 1 : integer
+    posY 2 : integer
+    speed 3 : integer
+    status 4 : integer
+    robot_total_num 5 : integer
+}
+
+.heartbeat {
     type 0 : integer
-    robot_id:1 integer
-    posX 2 : integer
-    posY 3 : integer
-    speed 4 : integer
-    status 5 : integer
 }

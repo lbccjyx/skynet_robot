@@ -68,8 +68,25 @@ function handleServerMessage(message) {
         case MSG_TYPE.BUILD_INFO:
             appendMessage('建筑信息', message.message);
             break;
+        case 2:  // RobotPos消息
+            handleRobotPos(message);
+            break;
         default:
             appendMessage('服务器', `未知类型消息: ${message.type}, 内容: ${message.message}`);
+    }
+}
+
+// 处理RobotPos消息
+function handleRobotPos(message) {
+    try {
+        const robotPos = JSON.parse(message.message);
+        // 更新游戏中的机器人位置
+        if (window.game && window.game.scene && window.game.scene.scenes[0]) {
+            const gameScene = window.game.scene.scenes[0];
+            gameScene.updateRobotPosition(robotPos);
+        }
+    } catch (err) {
+        console.error("Failed to process RobotPos message:", err);
     }
 }
 
@@ -121,7 +138,24 @@ function sendMessage() {
     }
 }
 
+// 发送NormalPos消息
+function sendNormalPos(normalPos) {
+    if (!ws) {
+        appendMessage('错误', '未连接到服务器');
+        return;
+    }
+    
+    try {
+        const buffer = encodeNormalPos(normalPos);
+        ws.send(buffer);
+    } catch (err) {
+        console.error("Failed to encode NormalPos message:", err);
+        appendMessage('错误', '消息编码失败');
+    }
+}
+
 // 导出需要的函数和变量
 window.connectWebSocket = connectWebSocket;
 window.sendMessage = sendMessage; 
 window.sendMessageByType = sendMessageByType;
+window.sendNormalPos = sendNormalPos;

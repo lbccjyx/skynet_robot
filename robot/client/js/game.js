@@ -6,6 +6,7 @@ class GameScene extends Phaser.Scene {
         this.people = null;
         this.moveTimer = null;
         this.currentDirection = 'down';  // 初始方向
+        this.robots = new Map();  // 存储所有机器人精灵
     }
 
     preload() {
@@ -33,8 +34,8 @@ class GameScene extends Phaser.Scene {
 
         // 加载人物图片
         this.load.spritesheet('people', 'assets/people/people.png', {
-            frameWidth: 72,  // 每帧宽度
-            frameHeight: 100  // 每帧高度
+            frameWidth: 32,  // 96/3
+            frameHeight: 48  // 192/4
         });
     }
 
@@ -42,38 +43,37 @@ class GameScene extends Phaser.Scene {
         try {
             // 创建背景
             this.background = this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'background');
-             //this.background.setOrigin(0, 0);
-            this.background.setScale(1.2);  // 同时设置X和Y方向的缩放
+            this.background.setScale(1.2);
 
             // 创建城墙并居中
             this.chengqiang = this.add.image(
-                this.cameras.main.width / 2 - 20,  // 水平居中
-                this.cameras.main.height / 2 + 10,  // 垂直居中
+                this.cameras.main.width / 2 - 20,
+                this.cameras.main.height / 2 + 10,
                 'chengqiang'
             );
-            this.chengqiang.setOrigin(0.5, 0.5);  // 设置原点为中心
-            this.chengqiang.setScale(1.5);  // 同时设置X和Y方向的缩放
+            this.chengqiang.setOrigin(0.5, 0.5);
+            this.chengqiang.setScale(1.5);
 
-
-            
             // 创建官府并居中
             this.guanfu = this.add.image(
-                this.cameras.main.width / 2 + 100,  // 水平居中
-                this.cameras.main.height / 2 - 60,  // 垂直居中
+                this.cameras.main.width / 2 + 100,
+                this.cameras.main.height / 2 - 60,
                 'guanfu'
             );
-            this.guanfu.setScale(0.6); 
+            this.guanfu.setScale(0.6);
             
             // 设置可交互，并启用像素完美点击检测
             this.chengqiang.setInteractive({ pixelPerfect: true });
             this.guanfu.setInteractive({ pixelPerfect: true });
-            
+        
+            // 发送城墙位置信息
+            this.sendWallPosition();
+
             // 添加城墙点击事件
             this.chengqiang.on('pointerdown', (pointer) => { 
                 console.log('城墙被点击');
-                if (typeof window.sendMessageByType === 'function') {
-                    window.sendMessageByType(5, 'chengqiang');
-                } 
+                // 发送城墙位置信息
+                // this.sendWallPosition();
             });
             
             // 添加官府点击事件
@@ -86,16 +86,13 @@ class GameScene extends Phaser.Scene {
             
             // 创建人物精灵
             this.people = this.add.sprite(400, 300, 'people');
-            this.people.setScale(0.3);  // 放大2倍
+            this.people.setScale(0.3);
 
             // 创建动画
             this.createAnimations();
-
-            // 开始随机移动
-            this.startRandomMovement();
             
             // 监听窗口大小变化
-            // window.addEventListener('resize', () => this.resizeBackground());
+            window.addEventListener('resize', () => this.resizeBackground());
         } catch (error) {
             console.error('Error in create:', error);
             appendMessage('错误', '创建游戏场景时发生错误');
@@ -136,59 +133,58 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    startRandomMovement() {
-        // 每3秒改变一次方向和位置
-        this.moveTimer = this.time.addEvent({
-            delay: 3000,
-            callback: this.changeDirection,
-            callbackScope: this,
-            loop: true
-        });
+    sendWallPosition() {
+        const bounds = this.chengqiang.getBounds();
+        const normalPos = {
+            pos_L_U_x: bounds.x,
+            pos_L_U_y: bounds.y,
+            pos_R_U_x: bounds.x + bounds.width,
+            pos_R_U_y: bounds.y,
+            pos_L_D_x: bounds.x,
+            pos_L_D_y: bounds.y + bounds.height,
+            pos_R_D_x: bounds.x + bounds.width,
+            pos_R_D_y: bounds.y + bounds.height
+        };
+        if (typeof window.sendNormalPos === 'function') {
+            window.sendNormalPos(normalPos);
+        }
     }
 
-    changeDirection() {
-        // 随机选择方向
-        const directions = ['up', 'down', 'left', 'right'];
-        const newDirection = directions[Math.floor(Math.random() * directions.length)];
+    // 更新机器人位置
+    updateRobotPosition(robotPos) {
+        let robot = this.robots.get(robotPos.robot_id);
         
-        // 如果方向改变，播放新的动画
-        if (newDirection !== this.currentDirection) {
-            this.currentDirection = newDirection;
-            this.people.play(`walk_${newDirection}`);
+        // 如果机器人不存在，创建新的精灵
+        if (!robot) {
+            robot = this.add.sprite(robotPos.posX, robotPos.posY, 'people');
+            robot.setScale(0.5);
+            this.robots.set(robotPos.robot_id, robot);
         }
 
-        // 计算新的位置
-        let newX = this.people.x;
-        let newY = this.people.y;
-        const moveDistance = 100;  // 移动距离
+        // 更新位置
+        robot.x = robotPos.posX;
+        robot.y = robotPos.posY;
 
-        switch (newDirection) {
-            case 'up':
-                newY -= moveDistance;
+        // 根据状态播放对应动画
+        let animKey = 'walk_down';
+        switch (robotPos.status) {
+            case 1:  // 右
+                animKey = 'walk_right';
                 break;
-            case 'down':
-                newY += moveDistance;
+            case 2:  // 下
+                animKey = 'walk_down';
                 break;
-            case 'left':
-                newX -= moveDistance;
+            case 3:  // 左
+                animKey = 'walk_left';
                 break;
-            case 'right':
-                newX += moveDistance;
+            case 4:  // 上
+                animKey = 'walk_up';
                 break;
         }
-
-        // 确保不超出屏幕边界
-        newX = Phaser.Math.Clamp(newX, 50, 750);
-        newY = Phaser.Math.Clamp(newY, 50, 550);
-
-        // 移动到新位置
-        this.tweens.add({
-            targets: this.people,
-            x: newX,
-            y: newY,
-            duration: 2000,
-            ease: 'Power2'
-        });
+        
+        if (!robot.anims.isPlaying || robot.anims.currentAnim.key !== animKey) {
+            robot.play(animKey);
+        }
     }
 
     update() {
