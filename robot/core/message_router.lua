@@ -3,15 +3,6 @@ local skynet = require "skynet"
 local MessageRouter = {}
 MessageRouter.__index = MessageRouter
 
--- 消息类型常量
-MessageRouter.MSG_TYPES = {
-    ECHO = 1,           -- 回显消息
-    CREATE_ROBOT = 2,   -- 创建机器人
-    STOP_ROBOT = 3,    -- 停止机器人
-    KICK_USER = 4,      -- 踢出用户
-    BUILD_FORMATION = 5, -- 建筑信息
-}
-
 function MessageRouter.new(ws_server)
     local self = setmetatable({}, MessageRouter)
     self.ws_server = ws_server

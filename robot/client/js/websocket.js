@@ -1,3 +1,4 @@
+// 移除import语句，直接使用全局变量
 let ws = null;
 let currentWsInfo = null;
 
@@ -23,20 +24,7 @@ function connectWebSocket(info) {
             console.log("Received message type:", typeof event.data);
             if (event.data instanceof ArrayBuffer) {
                 const message = decodeMessage(event.data);
-                switch(message.type) {
-                    case 4:  // 踢出消息
-                        appendMessage('系统', message.message);
-                        ws.close();
-                        logout();
-                        break;
-                    case 1:  // 回显消息
-                    case 2:  // 机器人控制响应
-                    case 3:  // 机器人消息
-                        appendMessage('服务器', message.message);
-                        break;
-                    default:
-                        appendMessage('服务器', `未知类型消息: ${message.type}, 内容: ${message.message}`);
-                }
+                handleServerMessage(message);
             } else {
                 appendMessage('服务器', event.data);
             }
@@ -64,6 +52,26 @@ function connectWebSocket(info) {
     };
 }
 
+// 处理服务器消息
+function handleServerMessage(message) {
+    switch (message.type) {
+        case MSG_TYPE.ECHO:  // 回显消息
+        case MSG_TYPE.ROBOT_CTRL:  // 机器人控制响应
+        case MSG_TYPE.ROBOT_MSG:  // 机器人消息
+            appendMessage('服务器', message.message);
+            break;
+        case MSG_TYPE.KICK_OUT:  // 踢出消息
+            appendMessage('系统', message.message);
+            ws.close();
+            logout();
+            break;
+        case MSG_TYPE.BUILD_INFO:
+            appendMessage('建筑信息', message.message);
+            break;
+        default:
+            appendMessage('服务器', `未知类型消息: ${message.type}, 内容: ${message.message}`);
+    }
+}
 
 function sendMessageByType(type, message) {
     if (!ws) {
@@ -79,7 +87,7 @@ function sendMessageByType(type, message) {
         try {
             const buffer = encodeMessage(msgType, msgContent);
             ws.send(buffer);
-            appendMessage('客户端', `类型: ${msgType}, 消息: ${msgContent}`);
+            // appendMessage('客户端', `类型: ${msgType}, 消息: ${msgContent}`);
             // 只有在没有提供参数时才清空输入框
             if (message === undefined) {
                 document.getElementById('messageInput').value = '';

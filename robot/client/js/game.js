@@ -17,24 +17,10 @@ class GameScene extends Phaser.Scene {
         });
 
         // 使用配置的资源服务器URL加载资源
-        const imageUrl = `${SERVER_CONFIG.getAssetsUrl()}/assets/background.png`;
-        const image_chengqiang_Url = `${SERVER_CONFIG.getAssetsUrl()}/assets/chengqiang.png`;
-        const image_guanfu_Url = `${SERVER_CONFIG.getAssetsUrl()}/assets/guanfu.png`;
-        console.log('Attempting to load image from:', imageUrl);
-        
-        // 直接加载图片，不进行预检查
-        this.load.image('background', imageUrl, {
-            crossOrigin: 'anonymous'  // 添加跨域支持
-        });
-
-        
-        this.load.image('chengqiang', image_chengqiang_Url, {
-            crossOrigin: 'anonymous'  // 添加跨域支持
-        });
-        
-        this.load.image('guanfu', image_guanfu_Url, {
-            crossOrigin: 'anonymous'  // 添加跨域支持
-        });
+        this.load.setBaseURL(SERVER_CONFIG.getAssetsUrl());        
+        this.load.image('background', 'assets/background.png');        
+        this.load.image('chengqiang', 'assets/chengqiang.png');        
+        this.load.image('guanfu', 'assets/guanfu.png');
         
         // 添加加载错误处理
         this.load.on('loaderror', (fileObj) => {
@@ -75,7 +61,6 @@ class GameScene extends Phaser.Scene {
             this.chengqiang.on('pointerdown', (pointer) => { 
                 console.log('城墙被点击');
                 if (typeof window.sendMessageByType === 'function') {
-                    window.sendMessageByType(1, 'chengqiang');
                     window.sendMessageByType(5, 'chengqiang');
                 } 
             });
@@ -84,7 +69,6 @@ class GameScene extends Phaser.Scene {
             this.guanfu.on('pointerdown', (pointer) => {
                 console.log('官府被点击');
                 if (typeof window.sendMessageByType === 'function') {
-                    window.sendMessageByType(1, 'guanfu');
                     window.sendMessageByType(5, 'guanfu');
                 }
             });
@@ -115,8 +99,8 @@ class GameScene extends Phaser.Scene {
 const config = {
     type: Phaser.AUTO,
     parent: 'gameContainer',
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: 1280,
+    height: 720,
     scene: GameScene,
     transparent: true
 };

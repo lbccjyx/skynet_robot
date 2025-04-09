@@ -10,6 +10,7 @@ local ConfigManager = require "core.config_manager"
 local ws_server
 local message_router
 local host
+local Enums = require "core.enums"
 
 skynet.init(function()
     -- 加载sproto文件
@@ -82,11 +83,11 @@ skynet.init(function()
     end)
 
     -- 注册消息处理器
-    message_router:register_handler(MessageRouter.MSG_TYPES.ECHO, function(client, message)
+    message_router:register_handler(Enums.MSG_TYPE.ECHO, function(client, message)
         return message
     end)
 
-    message_router:register_handler(MessageRouter.MSG_TYPES.CREATE_ROBOT, function(client, message)
+    message_router:register_handler(Enums.MSG_TYPE.ROBOT_CTRL, function(client, message)
         local count = tonumber(message)
         if count and count > 0 and client.user_id then
             local robot_mgr_addr = tonumber(skynet.getenv("SKYNET_ROBOT_MGR_SERVICE"))
@@ -99,7 +100,7 @@ skynet.init(function()
         return "Invalid robot count or user not initialized"
     end)
 
-    message_router:register_handler(MessageRouter.MSG_TYPES.BUILD_FORMATION, function(client, message)
+    message_router:register_handler(Enums.MSG_TYPE.BUILD_INFO, function(client, message)
         skynet.error("Build formation: ", message)
         local struct_config = GetCfgByIndex("s_struct","str_name", message);
         if struct_config ~= nil then

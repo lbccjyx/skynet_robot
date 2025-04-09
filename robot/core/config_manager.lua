@@ -136,7 +136,6 @@ end
 
 -- 通过指定索引字段获取配置
 function ConfigManager:getConfigByIndex(table_name, index_field, index_value)
-    print("**********ConfigManager:getConfigByIndex**********")
     local config_cache = sharedata.query("config_cache")
     if not config_cache then
         print("config_cache is nil")
