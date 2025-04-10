@@ -1,3 +1,7 @@
+import { SERVER_CONFIG } from './config.js';
+import { appendMessage } from './ui.js';
+
+
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -92,7 +96,7 @@ class GameScene extends Phaser.Scene {
             this.createAnimations();
             
             // 监听窗口大小变化
-            window.addEventListener('resize', () => this.resizeBackground());
+            // window.addEventListener('resize', () => this.resizeBackground());
         } catch (error) {
             console.error('Error in create:', error);
             appendMessage('错误', '创建游戏场景时发生错误');
@@ -237,3 +241,5 @@ function hideGame() {
         game = null;
     }
 } 
+
+export { showGame, hideGame };

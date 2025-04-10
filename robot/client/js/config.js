@@ -1,5 +1,5 @@
 // 服务器配置
-const SERVER_CONFIG = {
+export const SERVER_CONFIG = {
     // 主服务器地址
     HOST: '192.168.3.43',
     // 认证服务器端口
@@ -24,6 +24,3 @@ const SERVER_CONFIG = {
         return `http://${this.HOST}:${this.ASSETS_PORT}`;
     }
 };
-
-// 导出配置
-window.SERVER_CONFIG = SERVER_CONFIG; 

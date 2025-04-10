@@ -1,3 +1,7 @@
+import { SERVER_CONFIG } from './config.js';
+console.log(SERVER_CONFIG);
+
+
 // 编码认证消息
 function encodeSprotoAuth(type, username, password) {
     const message = `${username}|${password}`;
@@ -101,9 +105,4 @@ function decodeRobotPos(buffer) {
 }
 
 // 导出函数
-window.encodeSprotoAuth = encodeSprotoAuth;
-window.decodeSprotoAuthResponse = decodeSprotoAuthResponse;
-window.encodeMessage = encodeMessage;
-window.decodeMessage = decodeMessage;
-window.encodeNormalPos = encodeNormalPos;
-window.decodeRobotPos = decodeRobotPos; 
+export { encodeSprotoAuth, decodeSprotoAuthResponse, encodeMessage, decodeMessage, encodeNormalPos, decodeRobotPos }; 

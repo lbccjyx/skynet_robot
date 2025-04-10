@@ -1,3 +1,9 @@
+import { SERVER_CONFIG } from './config.js';
+import { encodeSprotoAuth, decodeSprotoAuthResponse } from './proto.js';
+import { connectWebSocket } from './websocket.js';
+import { sendMessage } from './websocket.js';
+import { showGame, hideGame } from './game.js';
+
 // UI 状态切换函数
 function showLogin() {
     const registerPanel = document.getElementById('registerPanel');
@@ -24,7 +30,7 @@ function showRegister() {
 }
 
 // 消息显示函数
-function appendMessage(sender, message) {
+export function appendMessage(sender, message) {
     const messageArea = document.getElementById('messageArea');
     if (!messageArea) {
         console.warn('Message area not found');
@@ -93,15 +99,7 @@ function handleLoginResponse(response) {
         connectWebSocket(wsInfo);
         
         // 显示游戏界面
-        if (typeof window.showGame === 'function') {
-            window.showGame();
-        } else {
-            console.error('showGame function is not defined');
-            // 降级处理：直接显示游戏面板
-            document.getElementById('loginPanel').style.display = 'none';
-            document.getElementById('registerPanel').style.display = 'none';
-            document.getElementById('gamePanel').style.display = 'block';
-        }
+        showGame();
         
         appendMessage("系统", "登录成功！");
     } else {
@@ -156,10 +154,8 @@ function logout() {
         ws.close();
         ws = null;
     }
-    
-    // 隐藏游戏界面
     hideGame();
-    
+
     // 显示登录面板
     showLogin();
     
