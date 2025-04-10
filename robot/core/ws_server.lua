@@ -1,6 +1,8 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
 local websocket = require "http.websocket"
+local sproto = require "sproto"
+local sprotoparser = require "sprotoparser"
 
 local WSServer = {}
 WSServer.__index = WSServer
@@ -10,6 +12,14 @@ function WSServer.new()
     self.handlers = {}  -- 消息处理器
     self.clients = {}   -- 客户端连接
     self.handshake_handler = nil  -- handshake处理函数
+    
+    -- 加载并解析sproto
+    local sp_file = io.open("robot/proto/ws.sproto", "r")
+    local sp_data = sp_file:read("*a")
+    sp_file:close()
+    self.sproto_schema = sprotoparser.parse(sp_data)
+    self.sproto = sproto.new(self.sproto_schema)
+    
     return self
 end
 
@@ -54,19 +64,35 @@ function WSServer:handle_socket(id, protocol, addr)
             assert(msg_type == "binary" or msg_type == "text")
             
             -- 解析二进制消息
-            local type = string.unpack("<i4", msg, 1)
+            local proto_id = string.unpack("<i4", msg, 1)
             local msg_len = string.unpack("<i4", msg, 5)
-            local message = string.sub(msg, 9)
+            local raw_message = string.sub(msg, 9)
+            
+            -- 获取协议名称
+            local proto_name = self.sproto.queryproto(proto_id).pname
+            if not proto_name then
+                skynet.error("Unknown protocol id:", proto_id)
+                return
+            end
+            
+            -- 解码消息内容
+            local decoded_message = self.sproto:decode(proto_name, raw_message)
+            if not decoded_message then
+                skynet.error("Failed to decode message for protocol:", proto_name)
+                return
+            end
             
             -- 调用对应的处理器
-            local handler = self.handlers[type]
+            local handler = self.handlers[proto_id]
             if handler then
-                local response = handler(self.clients[id], message)
+                -- 传递解码后的消息给handler
+                local response = handler(self.clients[id], decoded_message)
+                -- 默认收到消息之后要回复消息
                 if response then
-                    self:send_message(id, type, response)
+                    self:send_message(id, "NormalResp", {resp = response})
                 end
             else
-                skynet.error("Unknown message type:", type)
+                skynet.error("No handler for protocol:", proto_name)
             end
         end,
 
@@ -107,13 +133,23 @@ function WSServer:handle_socket(id, protocol, addr)
 end
 
 -- 发送消息
-function WSServer:send_message(client_id, msg_type, content)
+function WSServer:send_message(client_id, proto_name, data)
     if not self.clients[client_id] then
         return false
     end
 
     local ok, err = pcall(function()
-        local resp_buffer = string.pack("<i4i4", msg_type, #content) .. content
+        -- 使用sproto序列化数据
+        local message = self.sproto:encode(proto_name, data)
+        if not message then
+            error("Failed to encode message with proto: " .. proto_name)
+        end
+        
+        -- 获取协议ID
+        local proto_id = assert(self.sproto.queryproto(proto_name).tag, "Unknown protocol: " .. proto_name)
+        
+        -- 构建二进制消息：proto_id(4字节) + 消息长度(4字节) + 消息内容
+        local resp_buffer = string.pack("<i4i4", proto_id, #message) .. message
         websocket.write(client_id, resp_buffer, "binary")
     end)
 

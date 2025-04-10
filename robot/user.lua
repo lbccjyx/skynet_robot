@@ -15,7 +15,10 @@ end
 -- 发送消息
 function CUser:send_message(msg_type, content)
     if self.agent_handle and self.socket_id then
-        return skynet.call(self.agent_handle, "lua", "send_message", self.socket_id, msg_type, content)
+        return skynet.call(self.agent_handle, "lua", "send_message", self.socket_id, "WsMessage",{
+            type = msg_type,
+            message = content
+        })
     end
     return false
 end

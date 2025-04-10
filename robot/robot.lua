@@ -73,7 +73,10 @@ end
 
 function Robot:send_message(msg_type, content)
     if self.agent_handle and self.socket_id then
-        skynet.send(self.agent_handle, "lua", "send_message", self.socket_id, msg_type, content)
+        skynet.send(self.agent_handle, "lua", "send_message", self.socket_id, "WsMessage",{
+            type = msg_type,
+            message = content
+        })
     end
 end
 

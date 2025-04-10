@@ -1,7 +1,14 @@
+
+.NormalResp{
+    resp 1:string
+}
+
 .package {
     type 0 : integer
     session 1 : integer
 }
+
+###################################################################
 
 .Auth {
     type 0 : integer  # 1: register, 2: login
@@ -14,14 +21,24 @@
     msg 1 : string  # 200: token, other: failed
 }
 
+PROTOCOL_LOGIN 101 {
+    request Auth
+    response AuthResponse
+}
+
 .WsMessage {
-    type 0 : integer  # 1: echo, 2: create robots, 3: robot messages, 4: kick out
+    type 0 : integer  # 1: echo, 2: create robots, 3: robot messages, 4: kick out 5:heartbeat
     message 1 : string
 }
 
-.KickOut {
-    reason 0 : string
+PROTOCOL_NORMAL_RESP 102 {
+    response WsMessage
 }
+
+PROTOCOL_NORMAL_REQ 103 {
+    response WsMessage
+}
+
 
 .NormalPos {
     pos_L_U_x 0 : integer
@@ -34,6 +51,11 @@
     pos_R_D_y 7 : integer
 }
 
+PROTOCOL_NORMAL_POS_RECEIVE 104 {
+    request NormalPos
+}
+
+
 .RobotPos {
     robot_id 0 : integer
     posX 1 : integer
@@ -43,6 +65,6 @@
     robot_total_num 5 : integer
 }
 
-.heartbeat {
-    type 0 : integer
+PROTOCOL_NORMAL_POS_SEND 105 {
+    response RobotPos
 }

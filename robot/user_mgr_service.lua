@@ -29,7 +29,10 @@ function CMD.add_online_user(user_id, socket_id, agent_handle, token)
                 if uid == user_id and old_token ~= token then
                     -- 发送踢出消息给旧连接
                     skynet.tracelog("add_online_user", string.format("Kicking out old connection for user_id: %s, socket_id: %s", user_id, old_user.socket_id))
-                    pcall(skynet.call, old_user.agent_handle, "lua", "send_message", old_user.socket_id, 4, "Account logged in elsewhere")
+                    pcall(skynet.call, old_user.agent_handle, "lua", "send_message", old_user.socket_id,  "WsMessage",{
+                        type = 4,
+                        message = "Account logged in elsewhere"
+                    })
                     -- 清理旧token
                     user_tokens[old_token] = nil
                     break

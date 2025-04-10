@@ -95,7 +95,7 @@ class GameScene extends Phaser.Scene {
             // 创建动画
             this.createAnimations();
             
-            // 监听窗口大小变化
+            // 无需监听窗口大小变化
             // window.addEventListener('resize', () => this.resizeBackground());
         } catch (error) {
             console.error('Error in create:', error);

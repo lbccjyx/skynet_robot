@@ -19,7 +19,6 @@ skynet.init(function()
     
     local sp = sprotoparser.parse(content)
     host = sproto.new(sp):host "package"
-    
 end)
 
 local function init_mysql()

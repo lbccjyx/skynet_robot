@@ -19,8 +19,8 @@ skynet.init(function()
     f:close()
     
     local sp = sprotoparser.parse(content)
-    host = sproto.new(sp):host "package"
-
+    local sproto_obj = sproto.new(sp)
+    host = sproto_obj:host "package"
     -- 初始化数据库连接
     local db = DBManager.getInstance()
     local ok, err = db:init()
@@ -83,32 +83,35 @@ skynet.init(function()
     end)
 
     -- 注册消息处理器
-    message_router:register_handler(Enums.MSG_TYPE.ECHO, function(client, message)
-        return message
-    end)
-
-    message_router:register_handler(Enums.MSG_TYPE.ROBOT_CTRL, function(client, message)
-        local count = tonumber(message)
-        if count and count > 0 and client.user_id then
-            local robot_mgr_addr = tonumber(skynet.getenv("SKYNET_ROBOT_MGR_SERVICE"))
-            if not robot_mgr_addr then
-                return "Robot manager service not found"
+    message_router:register_handler(sproto_obj:queryproto("PROTOCOL_NORMAL_REQ").tag, function(client, message)
+        local msg_type = message.type
+        local content = message.message
+        if msg_type == Enums.MSG_TYPE.ECHO then
+            return content
+        elseif msg_type == Enums.MSG_TYPE.ROBOT_CTRL then
+            local count = tonumber(message)
+            if count and count > 0 and client.user_id then
+                local robot_mgr_addr = tonumber(skynet.getenv("SKYNET_ROBOT_MGR_SERVICE"))
+                if not robot_mgr_addr then
+                    return "Robot manager service not found"
+                end
+                local created_count = skynet.call(robot_mgr_addr, "lua", "create_robots", client.user_id, count)
+                return string.format("Created %d robots", created_count)
             end
-            local created_count = skynet.call(robot_mgr_addr, "lua", "create_robots", client.user_id, count)
-            return string.format("Created %d robots", created_count)
+            return "Invalid robot count or user not initialized"
+        elseif msg_type == Enums.MSG_TYPE.BUILD_INFO then
+            local struct_id = tonumber(message)
+            if struct_id and struct_id > 0 then
+                local struct_config = GetCfgByIndex("s_struct","str_name", struct_id);
+                if struct_config ~= nil then
+                    return struct_config["cn_name"]
+                end
+            end
         end
-        return "Invalid robot count or user not initialized"
+        return "Unknown message type"
     end)
 
-    message_router:register_handler(Enums.MSG_TYPE.BUILD_INFO, function(client, message)
-        skynet.error("Build formation: ", message)
-        local struct_config = GetCfgByIndex("s_struct","str_name", message);
-        if struct_config ~= nil then
-            local str = string.format("%s,%s,%s", struct_config["cn_name"], struct_config["id"], struct_config["str_name"])
-            return str
-        end
-        return "Invalid struct id"
-    end)
+
 
     message_router:init()
 end)
@@ -120,8 +123,8 @@ skynet.start(function()
             local id, protocol, addr = ...
             ws_server:handle_socket(id, protocol, addr)
         elseif cmd == "send_message" then
-            local socket_id, msg_type, content = ...
-            local ok = ws_server:send_message(socket_id, msg_type, content)
+            local socket_id, proto_name, content = ...
+            local ok = ws_server:send_message(socket_id, proto_name, content)
             skynet.ret(skynet.pack(ok))
         elseif cmd == "close" then
             local socket_id = ...
