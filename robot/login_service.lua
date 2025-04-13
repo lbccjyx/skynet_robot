@@ -4,8 +4,8 @@ local socket = require "skynet.socket"
 local httpd = require "http.httpd"
 local sockethelper = require "http.sockethelper"
 local urllib = require "http.url"
-local sproto = require "sproto"
-local sprotoparser = require "sprotoparser"
+local ProtoLoader = require "proto_loader"
+
 local json = require "json"
 local base64 = require "base64"
 local DBManager = require "core.db_manager"
@@ -15,34 +15,34 @@ local host
 local sproto_obj
 local sproto_content  -- 保存原始的sproto内容
 
-skynet.init(function()
-    -- 加载sproto文件
-    local f = io.open("./robot/proto/ws.sproto", "r")
-    if not f then
-        skynet.error("Failed to open sproto file")
-        return
-    end
-    sproto_content = f:read("*a")
-    f:close()
-    
-    if not sproto_content then
-        skynet.error("Failed to read sproto content")
-        return
-    end
-    
-    local ok, sp = pcall(sprotoparser.parse, sproto_content)
+
+local function load_proto()
+    local loader = ProtoLoader:new()
+    local ok, obj = pcall(loader.get_sproto, loader)
     if not ok then
-        skynet.error("Failed to parse sproto:", sp)
-        return
+        skynet.error("Failed to create sproto object:", obj)
+        return false
     end
     
-    sproto_obj = sproto.new(sp)
-    if not sproto_obj then
-        skynet.error("Failed to create sproto object")
-        return
+    local ok2, content = pcall(loader.get_proto_data, loader)
+    if not ok2 then
+        skynet.error("Failed to get proto data:", content)
+        return false
     end
     
+    -- 正确设置模块级变量（去掉local）
+    sproto_obj = obj
+    sproto_content = content
     host = sproto_obj:host "package"
+    
+    return true
+end
+
+skynet.init(function()
+    -- 如果是多线程环境，建议这样使用：
+    if host then return true end  -- 已经初始化
+
+    load_proto()
     if not host then
         skynet.error("Failed to create sproto host")
         return
@@ -50,6 +50,7 @@ skynet.init(function()
     
     skynet.error("Sproto initialized successfully")
 end)
+
 
 local function init_mysql()
     db = mysql.connect({
@@ -156,7 +157,7 @@ local function handle_login(id, params, agent_id)
         -- 获取sproto协议描述并Base64编码
         skynet.tracelog("login", "[17] 开始获取sproto协议描述")
         -- 直接使用原始的sproto内容
-        if not sproto_content then
+        if not load_proto() then           
             skynet.tracelog("login", "[17.1] 错误：sproto内容为空")
             return json_response(id, 500, { success = false, message = "Sproto content is empty" })
         end
@@ -283,6 +284,10 @@ end
 
 skynet.start(function()
     init_mysql()
+    if not load_proto() then
+        skynet.error("Critical error: failed to initialize sproto")
+        skynet.exit()
+    end
     local port = 8080
     local id = socket.listen("0.0.0.0", port)
     skynet.tracelog("init", string.format("Login service listening on port %d", port))

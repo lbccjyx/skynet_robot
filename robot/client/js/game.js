@@ -148,7 +148,7 @@ class GameScene extends Phaser.Scene {
             pos_R_D_x: bounds.x + bounds.width,
             pos_R_D_y: bounds.y + bounds.height
         };
-        SendProtoMessage(PROTOCOL.NORMAL_REQ, normalPos);
+        SendProtoMessage(PROTOCOL.NORMAL_POS_C_TO_S, normalPos);
     }
 
     // 更新机器人位置

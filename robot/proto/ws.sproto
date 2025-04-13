@@ -51,7 +51,7 @@ PROTOCOL_NORMAL_REQ 103 {
     pos_R_D_y 7 : integer
 }
 
-PROTOCOL_NORMAL_POS_RECEIVE 104 {
+PROTOCOL_NORMAL_POS_C_TO_S 104 {
     request NormalPos
 }
 

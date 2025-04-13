@@ -6,7 +6,7 @@ export function initSproto(sprotoDesc) {
     try {
         // 首先解码 base64 字符串获取原始协议内容
         const decodedContent = atob(sprotoDesc);
-        console.log('Decoded sproto content:', decodedContent);
+        //console.log('Decoded sproto content:', decodedContent);
         
         // 使用新的解析方式创建实例
         sprotoInstance = Sproto.new(decodedContent);

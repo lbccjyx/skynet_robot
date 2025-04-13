@@ -11,15 +11,17 @@ local ws_server
 local message_router
 local host
 local Enums = require "core.enums"
+local ProtoLoader = require "proto_loader"
 
 skynet.init(function()
     -- 加载sproto文件
-    local f = io.open("./robot/proto/ws.sproto", "r")
-    local content = f:read("*a")
-    f:close()
-    
-    local sp = sprotoparser.parse(content)
-    local sproto_obj = sproto.new(sp)
+    -- 如果是多线程环境，建议这样使用：
+    local loader = ProtoLoader:new()
+    local ok, sproto_obj = pcall(loader.get_sproto, loader)
+    if not ok then
+        skynet.error("Failed to create sproto object")
+        return
+    end    
     host = sproto_obj:host "package"
     -- 初始化数据库连接
     local db = DBManager.getInstance()

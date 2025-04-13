@@ -1,11 +1,36 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
 local websocket = require "http.websocket"
-local sproto = require "sproto"
-local sprotoparser = require "sprotoparser"
+local ProtoLoader = require "proto_loader"
+
+local host
+local sproto_obj
+local sproto_content  -- 保存原始的sproto内容
 
 local WSServer = {}
 WSServer.__index = WSServer
+
+local function load_proto()
+    local loader = ProtoLoader:new()
+    local ok, obj = pcall(loader.get_sproto, loader)
+    if not ok then
+        skynet.error("Failed to create sproto object:", obj)
+        return false
+    end
+    
+    local ok2, content = pcall(loader.get_proto_data, loader)
+    if not ok2 then
+        skynet.error("Failed to get proto data:", content)
+        return false
+    end
+    
+    -- 正确设置模块级变量（去掉local）
+    sproto_obj = obj
+    sproto_content = content
+    host = sproto_obj:host "package"
+    
+    return true
+end
 
 function WSServer.new()
     local self = setmetatable({}, WSServer)
@@ -13,13 +38,7 @@ function WSServer.new()
     self.clients = {}   -- 客户端连接
     self.handshake_handler = nil  -- handshake处理函数
     
-    -- 加载并解析sproto
-    local sp_file = io.open("robot/proto/ws.sproto", "r")
-    local sp_data = sp_file:read("*a")
-    sp_file:close()
-    self.sproto_schema = sprotoparser.parse(sp_data)
-    self.sproto = sproto.new(self.sproto_schema)
-    
+    load_proto()    
     return self
 end
 
@@ -75,23 +94,37 @@ function WSServer:handle_socket(id, protocol, addr)
                 skynet.tracelog("websocket", string.format("解析消息头，proto_id: %d, msg_len: %d", proto_id, msg_len))
                 
                 -- 获取协议名称
-                local proto = self.sproto.queryproto(proto_id)
+                local proto = sproto_obj:queryproto(proto_id)
                 if not proto then
                     skynet.error(string.format("未知的协议ID: %d", proto_id))
                     return
                 end
-                
-                local proto_name = proto.pname
-                skynet.tracelog("websocket", string.format("协议名称: %s", proto_name))
-                
-                -- 解码消息内容
-                local decoded_message = self.sproto:decode(proto_name, raw_message)
+
+                local proto_name = proto.name
+                skynet.tracelog("websocket", string.format("协议信息 - name:%s, tag:%d, has_req:%s, has_resp:%s",
+                proto_name, proto.tag, tostring(proto.request ~= nil), tostring(proto.response ~= nil)))     
+
+                -- 尝试解码（自动判断请求/响应）
+                local decoded_message
+                if proto.request then
+                    decoded_message = sproto_obj:request_decode(proto_name, raw_message)
+                    skynet.tracelog("websocket", "作为请求消息解码")
+                elseif proto.response then
+                    decoded_message = sproto_obj:response_decode(proto_name, raw_message)
+                    skynet.tracelog("websocket", "作为响应消息解码")
+                end
+
                 if not decoded_message then
-                    skynet.error(string.format("消息解码失败，proto_name: %s, raw_message_len: %d", proto_name, #raw_message))
+                    skynet.error(string.format("解码失败 - proto:%s(%d), msg_len:%d", 
+                        proto_name, proto_id, #raw_message))
+                    -- 打印原始消息的16进制表示用于调试
+                    skynet.error("原始消息(hex):", string.gsub(raw_message, ".", function(c) 
+                        return string.format("%02X ", string.byte(c)) 
+                    end))
                     return
                 end
-                
-                skynet.tracelog("websocket", string.format("消息解码成功: %s", table.concat(table.pack(decoded_message), ", ")))
+
+                skynet.tracelog("websocket", "解码成功:", inspect(decoded_message))
                 
                 -- 调用对应的处理器
                 local handler = self.handlers[proto_id]
@@ -158,13 +191,13 @@ function WSServer:send_message(client_id, proto_name, data)
 
     local ok, err = pcall(function()
         -- 使用sproto序列化数据
-        local message = self.sproto:encode(proto_name, data)
+        local message = sproto_obj:encode(proto_name, data)
         if not message then
             error("Failed to encode message with proto: " .. proto_name)
         end
         
         -- 获取协议ID
-        local proto_id = assert(self.sproto.queryproto(proto_name).tag, "Unknown protocol: " .. proto_name)
+        local proto_id = assert(sproto_obj.queryproto(proto_name).tag, "Unknown protocol: " .. proto_name)
         
         -- 构建二进制消息：proto_id(4字节) + 消息长度(4字节) + 消息内容
         local resp_buffer = string.pack("<i4i4", proto_id, #message) .. message
