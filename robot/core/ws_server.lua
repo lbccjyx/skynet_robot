@@ -103,6 +103,9 @@ function WSServer:handle_socket(id, protocol, addr)
                 local proto_name = proto.name
                 skynet.tracelog("websocket", string.format("协议信息 - name:%s, tag:%d, has_req:%s, has_resp:%s",
                 proto_name, proto.tag, tostring(proto.request ~= nil), tostring(proto.response ~= nil)))     
+                
+                local sample_pos = string.unpack("<i4", raw_message, 1)
+                print("第一个坐标值解析测试:", sample_pos)
 
                 -- 尝试解码（自动判断请求/响应）
                 local decoded_message
