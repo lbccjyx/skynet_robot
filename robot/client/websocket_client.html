@@ -5,15 +5,20 @@
         使用python内置
         python3 -m http.server 8000  # 端口 8000
         http://192.168.3.43:8000/websocket_client.html
+        sudo netstat -tulnp | grep 2013
     -->
 <head>
     <title>Skynet WebSocket Client</title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="css/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="js/phaser.min.js"></script>
+    <script src="js/base64js.min.js"></script>
+    <!-- 首先加载基础模块 -->
+    <script type="module" src="js/sproto.js"></script>
+    <script type="module" src="js/sproto-helper.js"></script>
     <script type="module" src="js/enums.js"></script>
     <script type="module" src="js/config.js"></script>
-    <script type="module" src="js/proto.js"></script>
+    <!-- 然后加载依赖基础模块的其他模块 -->
     <script type="module" src="js/game.js"></script>
     <script type="module" src="js/websocket.js"></script>
     <script type="module" src="js/ui.js"></script>

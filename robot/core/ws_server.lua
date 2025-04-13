@@ -63,36 +63,54 @@ function WSServer:handle_socket(id, protocol, addr)
         message = function(id, msg, msg_type)
             assert(msg_type == "binary" or msg_type == "text")
             
-            -- 解析二进制消息
-            local proto_id = string.unpack("<i4", msg, 1)
-            local msg_len = string.unpack("<i4", msg, 5)
-            local raw_message = string.sub(msg, 9)
-            
-            -- 获取协议名称
-            local proto_name = self.sproto.queryproto(proto_id).pname
-            if not proto_name then
-                skynet.error("Unknown protocol id:", proto_id)
-                return
-            end
-            
-            -- 解码消息内容
-            local decoded_message = self.sproto:decode(proto_name, raw_message)
-            if not decoded_message then
-                skynet.error("Failed to decode message for protocol:", proto_name)
-                return
-            end
-            
-            -- 调用对应的处理器
-            local handler = self.handlers[proto_id]
-            if handler then
-                -- 传递解码后的消息给handler
-                local response = handler(self.clients[id], decoded_message)
-                -- 默认收到消息之后要回复消息
-                if response then
-                    self:send_message(id, "NormalResp", {resp = response})
+            -- 使用pcall包装所有可能出错的操作
+            local ok, err = pcall(function()
+                -- 解析二进制消息
+                skynet.tracelog("websocket", string.format("收到客户端消息，client_id: %d, msg_type: %s, msg_len: %d", id, msg_type, #msg))
+                
+                local proto_id = string.unpack("<i4", msg, 1)
+                local msg_len = string.unpack("<i4", msg, 5)
+                local raw_message = string.sub(msg, 9)
+                
+                skynet.tracelog("websocket", string.format("解析消息头，proto_id: %d, msg_len: %d", proto_id, msg_len))
+                
+                -- 获取协议名称
+                local proto = self.sproto.queryproto(proto_id)
+                if not proto then
+                    skynet.error(string.format("未知的协议ID: %d", proto_id))
+                    return
                 end
-            else
-                skynet.error("No handler for protocol:", proto_name)
+                
+                local proto_name = proto.pname
+                skynet.tracelog("websocket", string.format("协议名称: %s", proto_name))
+                
+                -- 解码消息内容
+                local decoded_message = self.sproto:decode(proto_name, raw_message)
+                if not decoded_message then
+                    skynet.error(string.format("消息解码失败，proto_name: %s, raw_message_len: %d", proto_name, #raw_message))
+                    return
+                end
+                
+                skynet.tracelog("websocket", string.format("消息解码成功: %s", table.concat(table.pack(decoded_message), ", ")))
+                
+                -- 调用对应的处理器
+                local handler = self.handlers[proto_id]
+                if handler then
+                    -- 传递解码后的消息给handler
+                    local response = handler(self.clients[id], decoded_message)
+                    -- 默认收到消息之后要回复消息
+                    if response then
+                        skynet.tracelog("websocket", string.format("发送响应消息，client_id: %d", id))
+                        self:send_message(id, "NormalResp", {resp = response})
+                    end
+                else
+                    skynet.error(string.format("未找到协议处理器: %s (id: %d)", proto_name, proto_id))
+                end
+            end)
+            
+            if not ok then
+                skynet.error(string.format("处理消息时发生错误: %s", tostring(err)))
+                -- 不要断开连接，只记录错误
             end
         end,
 

@@ -1,8 +1,8 @@
 import { SERVER_CONFIG } from './config.js';
-import { encodeSprotoAuth, decodeSprotoAuthResponse } from './proto.js';
-import { connectWebSocket } from './websocket.js';
-import { sendMessage } from './websocket.js';
+import { ConnectWebSocket, SendProtoMessage } from './websocket.js';
 import { showGame, hideGame } from './game.js';
+import { initSproto } from './sproto-helper.js'; // 新增 sproto 初始化模块
+import { PROTOCOL, NORMAL_MSG_TYPE } from './enums.js';
 
 // UI 状态切换函数
 function showLogin() {
@@ -60,48 +60,63 @@ async function login() {
     const password = document.getElementById('loginPassword').value;
     
     try {
-        const buffer = encodeSprotoAuth(2, username, password);  // type 2 for login
-        const response = await fetch(`${SERVER_CONFIG.getAuthUrl()}/auth`, {
+        const response = await fetch(`${SERVER_CONFIG.getAuthUrl()}/login`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-sproto',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
-            body: buffer
+            mode: 'cors',  // 添加 CORS 模式
+            credentials: 'omit',  // 不发送 cookies
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
         
-        const responseBuffer = await response.arrayBuffer();
-        const responseData = decodeSprotoAuthResponse(responseBuffer);
+        const responseData = await response.json();
+        console.log('Login response:', responseData);  // 添加调试日志
         
-        if (responseData.code === 200) {
+        if (responseData.success) {
             handleLoginResponse(responseData);
         } else {
-            alert(responseData.message);
+            alert(responseData.message || 'Login failed');
         }
     } catch (error) {
         console.error('Login error:', error);
-        alert('登录失败: ' + error.message);
+        appendMessage('错误', '登录失败: ' + error.message);
     }
 }
 
 function handleLoginResponse(response) {
-    if (response.code === 200) {
-        // 解析登录响应
-        const wsInfo = {
-            token: response.message,  // 使用msg作为token
-            ws_host: `${SERVER_CONFIG.getWsUrl()}/test_websocket`
-        };
-        
-        // 连接WebSocket
-        connectWebSocket(wsInfo);
-        
-        // 显示游戏界面
-        showGame();
-        
-        appendMessage("系统", "登录成功！");
+    if (response.success) {
+        try {
+            // 初始化 sproto
+            const sprotoInstance = initSproto(response.sproto_desc);
+            if (!sprotoInstance) {
+                throw new Error('Failed to initialize Sproto');
+            }
+            
+            // 连接 WebSocket
+            const wsInfo = {
+                token: response.token,
+                ws_host: `${SERVER_CONFIG.getWsUrl()}/ws?token=${response.token}`
+            };
+            ConnectWebSocket(wsInfo);
+            
+            // 显示游戏界面
+            showGame();
+            
+            appendMessage("系统", "登录成功！");
+        } catch (e) {
+            console.error('Failed to init sproto:', e);
+            appendMessage("错误", '协议初始化失败: ' + e.message);
+        }
     } else {
         appendMessage("错误", response.message);
     }
@@ -119,23 +134,24 @@ async function register() {
     }
     
     try {
-        const buffer = encodeSprotoAuth(1, username, password);  // type 1 for register
-        const response = await fetch(`${SERVER_CONFIG.getAuthUrl()}/auth`, {
+        const response = await fetch(`${SERVER_CONFIG.getAuthUrl()}/register`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-sproto',
+                'Content-Type': 'application/json',
             },
-            body: buffer
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
         });
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const responseBuffer = await response.arrayBuffer();
-        const responseData = decodeSprotoAuthResponse(responseBuffer);
+        const responseData = await response.json();
         
-        if (responseData.code === 200) {
+        if (responseData.success) {
             alert('注册成功！请登录');
             showLogin();
         } else {
@@ -150,9 +166,9 @@ async function register() {
 // 登出函数
 function logout() {
     // 断开WebSocket连接
-    if (ws) {
-        ws.close();
-        ws = null;
+    if (window.ws) {
+        window.ws.close();
+        window.ws = null;
     }
     hideGame();
 
@@ -197,7 +213,38 @@ function initializeEventListeners() {
     // 发送消息按钮
     const sendBtn = document.getElementById('sendBtn');
     if (sendBtn) {
-        sendBtn.addEventListener('click', sendMessage);
+        sendBtn.addEventListener('click', function() {
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput) {
+                try {
+                    const message = messageInput.value.trim();
+                    if (!message) {
+                        console.log('消息内容为空，不发送');
+                        return;
+                    }
+                    
+                    console.log('准备发送消息:', {
+                        protocol: PROTOCOL.NORMAL_REQ,
+                        type: NORMAL_MSG_TYPE.WS_MESSAGE,
+                        message: message
+                    });
+                    
+                    // 确保消息格式符合WsMessage结构
+                    const wsMessage = {
+                        type: NORMAL_MSG_TYPE.WS_MESSAGE,  // integer
+                        message: message                    // string
+                    };
+                    
+                    SendProtoMessage(PROTOCOL.NORMAL_REQ, wsMessage);
+                    
+                    // 清空输入框
+                    messageInput.value = '';
+                } catch (error) {
+                    console.error('发送消息失败:', error);
+                    appendMessage('系统', '发送消息失败: ' + error.message);
+                }
+            }
+        });
     }
 
     // 消息输入框回车事件
@@ -205,7 +252,33 @@ function initializeEventListeners() {
     if (messageInput) {
         messageInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                sendMessage();
+                try {
+                    const message = messageInput.value.trim();
+                    if (!message) {
+                        console.log('消息内容为空，不发送');
+                        return;
+                    }
+                    
+                    console.log('准备发送消息:', {
+                        protocol: PROTOCOL.NORMAL_REQ,
+                        type: NORMAL_MSG_TYPE.WS_MESSAGE,
+                        message: message
+                    });
+                    
+                    // 确保消息格式符合WsMessage结构
+                    const wsMessage = {
+                        type: NORMAL_MSG_TYPE.WS_MESSAGE,  // integer
+                        message: message                    // string
+                    };
+                    
+                    SendProtoMessage(PROTOCOL.NORMAL_REQ, wsMessage);
+                    
+                    // 清空输入框
+                    messageInput.value = '';
+                } catch (error) {
+                    console.error('发送消息失败:', error);
+                    appendMessage('系统', '发送消息失败: ' + error.message);
+                }
             }
         });
     }
@@ -227,4 +300,4 @@ window.showRegister = showRegister;
 window.appendMessage = appendMessage;
 window.login = login;
 window.register = register;
-window.logout = logout; 
+window.logout = logout;

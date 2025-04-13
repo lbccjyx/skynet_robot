@@ -36,7 +36,7 @@ PROTOCOL_NORMAL_RESP 102 {
 }
 
 PROTOCOL_NORMAL_REQ 103 {
-    response WsMessage
+    request WsMessage
 }
 
 

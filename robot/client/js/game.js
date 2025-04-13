@@ -1,6 +1,7 @@
 import { SERVER_CONFIG } from './config.js';
 import { appendMessage } from './ui.js';
-
+import { SendProtoMessage } from './websocket.js';
+import { PROTOCOL } from './enums.js';
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -83,9 +84,7 @@ class GameScene extends Phaser.Scene {
             // 添加官府点击事件
             this.guanfu.on('pointerdown', (pointer) => {
                 console.log('官府被点击');
-                if (typeof window.sendMessageByType === 'function') {
-                    window.sendMessageByType(5, 'guanfu');
-                }
+                SendProtoMessage(PROTOCOL.NORMAL_REQ, {type: 5, message: 'guanfu'});
             });
             
             // 创建人物精灵
@@ -149,9 +148,7 @@ class GameScene extends Phaser.Scene {
             pos_R_D_x: bounds.x + bounds.width,
             pos_R_D_y: bounds.y + bounds.height
         };
-        if (typeof window.sendNormalPos === 'function') {
-            window.sendNormalPos(normalPos);
-        }
+        SendProtoMessage(PROTOCOL.NORMAL_REQ, normalPos);
     }
 
     // 更新机器人位置
