@@ -1,6 +1,7 @@
 import { NORMAL_MSG_TYPE,PROTOCOL } from './enums.js';
 import { appendMessage } from './ui.js';
 import { getSproto, initSproto } from './sproto-helper.js';
+import { Sproto } from './sproto.js';
 
 let sprotoInstance = null;
 let ws = null;
@@ -54,6 +55,31 @@ function handleRobotPos(message) {
     }
 }
 
+// 自己实现 sproto_protoquery_name 函数
+function sproto_protoquery_name(name, sproto) {
+    if (!sproto || !sproto.proto) return null;
+    
+    for (let i = 0; i < sproto.protocol_n; i++) {
+        if (sproto.proto[i].name === name) {
+            return sproto.proto[i];
+        }
+    }
+    return null;
+}
+
+
+// 自己实现 sproto_protoname 函数
+function sproto_protoname(proto) {
+    if (!sprotoInstance || !sprotoInstance.proto) return null;
+    
+    for (let i = 0; i < sprotoInstance.protocol_n; i++) {
+        if (sprotoInstance.proto[i].tag === proto) {
+            return sprotoInstance.proto[i].name;
+        }
+    }
+    return null;
+}
+
 // 发送所有的协议消息接口
 /**
  * 发送 protobuf 消息到服务端
@@ -75,21 +101,32 @@ function SendProtoMessage(protocolName, message) {
             }
         }
 
-        console.log('开始编码消息:', {
-            protocolName,
-            message
+        console.log('准备发送消息:', {
+            protocol: protocolName,
+            ...message
         });
 
         // 1. 根据协议名称查找协议定义
-        const protocol = sprotoInstance.protocol(protocolName);
+        const protocol = sproto_protoquery_name(protocolName, sprotoInstance);
         if (!protocol) {
             console.error(`未知的协议名称: ${protocolName}`);
             throw new Error(`未知的协议名称: ${protocolName}`);
         }
 
+        // 确保协议有请求类型定义
+        if (!protocol.p || !protocol.p[0]) {
+            console.error(`协议 ${protocolName} 没有请求类型定义`);
+            throw new Error(`协议 ${protocolName} 没有请求类型定义`);
+        }
+        // 打印调试信息
+        console.log('找到协议:', {
+            name: protocol.p[0].name,
+            tag: protocol.tag,
+            requestType: protocol.p[0].name
+        });
+
         // 2. 编码消息
-        const encodedMessage = sprotoInstance.encode(protocolName, message);
-        if (!encodedMessage) {
+        const encodedMessage = sprotoInstance.encode( protocol.p[0].name, message);        if (!encodedMessage) {
             console.error('消息编码失败:', message);
             throw new Error('消息编码失败');
         }
@@ -99,24 +136,32 @@ function SendProtoMessage(protocolName, message) {
             throw new Error('编码结果无效');
         }
 
+        // 确保所有字节值都是正数且在0-255范围内
+        const normalizedBuffer = encodedMessage.buf.map(byte => {
+            // 如果是负数，转换为无符号值
+            return byte < 0 ? byte + 256 : byte;
+        });
+
         console.log('消息编码成功:', {
-            protocolTag: protocol.id,
+            protocolTag: protocol.tag,
             messageSize: encodedMessage.sz,
-            message: encodedMessage.buf
+            message: normalizedBuffer
         });
 
         // 3. 构建二进制消息头 (8字节)
         const header = new ArrayBuffer(8);
         const headerView = new DataView(header);
-        headerView.setInt32(0, protocol.id, true);   // 4字节 proto_id (小端序)
+        headerView.setInt32(0, protocol.tag, true);   // 4字节 proto_id (小端序)
         headerView.setInt32(4, encodedMessage.sz, true); // 4字节 消息长度 (小端序)
 
         // 4. 合并头和消息体
         const fullMessage = new Uint8Array(8 + encodedMessage.sz);
         fullMessage.set(new Uint8Array(header), 0);
         
-        // 直接使用编码后的数字数组
-        fullMessage.set(encodedMessage.buf, 8);
+        // 使用修正后的字节数组
+        for (let i = 0; i < normalizedBuffer.length; i++) {
+            fullMessage[8 + i] = normalizedBuffer[i];
+        }
 
         console.log('准备发送二进制数据:', {
             totalSize: fullMessage.length,
@@ -134,22 +179,22 @@ function SendProtoMessage(protocolName, message) {
         throw err;
     }
 }
-
 // 处理所有的WebSocket消息接口
 function handleWsMessage(protoId, messageBody) {
     // 解码消息
-    const protocol = sprotoInstance.protocol(protoId);
+    const protocol = findProtocolById(sprotoInstance, protoId);
     if (!protocol) {
         throw new Error(`Protocol not found: ${protoId}`);
     }
 
     // 解码 response（即 WsMessage 结构）
-    const result = sprotoInstance.decode(protocol.response, messageBody);
+    const result = sprotoInstance.decode(protocol.p[0].response, messageBody);
     if (!result) {
         throw new Error("Failed to decode message");
     }
 
-    switch (sprotoInstance.getProtocolName(protoId)) {
+    const protocolName =  sproto_protoname(protoId);
+    switch (protocolName) {
         case PROTOCOL.NORMAL_RESP:
             console.log("Type:", result.type); // 访问 type 字段
             console.log("Message:", result.message); // 访问 message 字段
@@ -168,6 +213,19 @@ function handleWsMessage(protoId, messageBody) {
             console.log("Unknown protocol:", protoId);
             break;
     }
+}
+// 添加辅助函数：根据ID查找协议
+function findProtocolById(sprotoInstance, id) {
+    if (!sprotoInstance || !sprotoInstance.proto) {
+        return null;
+    }
+    
+    for (let i = 0; i < sprotoInstance.proto.length; i++) {
+        if (sprotoInstance.proto[i].tag === id) {
+            return sprotoInstance.proto[i];
+        }
+    }
+    return null;
 }
 
 // 与服务端的连接

@@ -103,31 +103,22 @@ function WSServer:handle_socket(id, protocol, addr)
                 local proto_name = proto.name
                 skynet.tracelog("websocket", string.format("协议信息 - name:%s, tag:%d, has_req:%s, has_resp:%s",
                 proto_name, proto.tag, tostring(proto.request ~= nil), tostring(proto.response ~= nil)))     
+               
+                -- -- 尝试打印原始消息的每个字节
+                -- skynet.tracelog("websocket", "原始消息字节:")
+                -- for i = 1, #raw_message do
+                --     skynet.tracelog("websocket", string.format("字节 %d: %d", i, string.byte(raw_message, i)))
+                -- end
                 
-                local sample_pos = string.unpack("<i4", raw_message, 1)
-                print("第一个坐标值解析测试:", sample_pos)
-
-                -- 尝试解码（自动判断请求/响应）
-                local decoded_message
-                if proto.request then
-                    decoded_message = sproto_obj:request_decode(proto_name, raw_message)
-                    skynet.tracelog("websocket", "作为请求消息解码")
-                elseif proto.response then
-                    decoded_message = sproto_obj:response_decode(proto_name, raw_message)
-                    skynet.tracelog("websocket", "作为响应消息解码")
+                local ok, result = pcall(sproto_obj.request_decode, sproto_obj, proto_name, raw_message)
+                if ok then
+                    decoded_message = result
+                    skynet.error("解码成功: " .. (type(result) == "table" and "table" or tostring(result)))
+                else
+                    skynet.error(string.format("请求解码失败: %s", tostring(result)))
                 end
 
-                if not decoded_message then
-                    skynet.error(string.format("解码失败 - proto:%s(%d), msg_len:%d", 
-                        proto_name, proto_id, #raw_message))
-                    -- 打印原始消息的16进制表示用于调试
-                    skynet.error("原始消息(hex):", string.gsub(raw_message, ".", function(c) 
-                        return string.format("%02X ", string.byte(c)) 
-                    end))
-                    return
-                end
-
-                skynet.tracelog("websocket", "解码成功:", inspect(decoded_message))
+                
                 
                 -- 调用对应的处理器
                 local handler = self.handlers[proto_id]

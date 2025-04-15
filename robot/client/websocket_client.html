@@ -3,6 +3,7 @@
 
     <!-- 
         使用python内置
+        cd robot/client/
         python3 -m http.server 8000  # 端口 8000
         http://192.168.3.43:8000/websocket_client.html
         sudo netstat -tulnp | grep 2013
@@ -13,7 +14,9 @@
     <link rel="stylesheet" href="css/styles.css">
     <script src="js/phaser.min.js"></script>
     <script src="js/base64js.min.js"></script>
+
     <!-- 首先加载基础模块 -->
+    <script type="module" src="js/utf8.js"></script>
     <script type="module" src="js/sproto.js"></script>
     <script type="module" src="js/sproto-helper.js"></script>
     <script type="module" src="js/enums.js"></script>
