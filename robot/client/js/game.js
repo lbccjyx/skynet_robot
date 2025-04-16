@@ -71,9 +71,6 @@ class GameScene extends Phaser.Scene {
             this.chengqiang.setInteractive({ pixelPerfect: true });
             this.guanfu.setInteractive({ pixelPerfect: true });
         
-            // 发送城墙位置信息
-            this.sendWallPosition();
-
             // 添加城墙点击事件
             this.chengqiang.on('pointerdown', (pointer) => { 
                 console.log('城墙被点击');
@@ -136,20 +133,20 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    sendWallPosition() {
-        const bounds = this.chengqiang.getBounds();
-        const normalPos = {
-            pos_L_U_x: Math.round(bounds.x),
-            pos_L_U_y: Math.round(bounds.y),
-            pos_R_U_x: Math.round(bounds.x+ bounds.width) ,
-            pos_R_U_y: Math.round(bounds.y),
-            pos_L_D_x: Math.round(bounds.x),
-            pos_L_D_y: Math.round(bounds.y+ bounds.height) ,
-            pos_R_D_x: Math.round(bounds.x+ bounds.width) ,
-            pos_R_D_y: Math.round(bounds.y + bounds.height)
-        };
-        SendProtoMessage(PROTOCOL.NORMAL_POS_C_TO_S, normalPos);
-    }
+    // sendWallPosition() {
+    //     const bounds = this.chengqiang.getBounds();
+    //     const normalPos = {
+    //         pos_L_U_x: Math.round(bounds.x),
+    //         pos_L_U_y: Math.round(bounds.y),
+    //         pos_R_U_x: Math.round(bounds.x+ bounds.width) ,
+    //         pos_R_U_y: Math.round(bounds.y),
+    //         pos_L_D_x: Math.round(bounds.x),
+    //         pos_L_D_y: Math.round(bounds.y+ bounds.height) ,
+    //         pos_R_D_x: Math.round(bounds.x+ bounds.width) ,
+    //         pos_R_D_y: Math.round(bounds.y + bounds.height)
+    //     };
+    //     SendProtoMessage(PROTOCOL.NORMAL_POS_C_TO_S, normalPos);
+    // }
 
     // 更新机器人位置
     updateRobotPosition(robotPos) {

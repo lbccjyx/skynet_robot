@@ -113,18 +113,17 @@ skynet.init(function()
         return "Unknown message type"
     end)
 
-    message_router:register_handler(sproto_obj:queryproto("PROTOCOL_NORMAL_POS_C_TO_S").tag, function(client, message)
-        local Lux = message.pos_L_U_x
-        local Luy = message.pos_L_U_y
-        local Rux = message.pos_R_U_x
-        local Ruy = message.pos_R_U_y
-        local Rdx = message.pos_R_D_x
-        local Rdy = message.pos_R_D_y
-        local Ldx = message.pos_L_D_x
-        local Ldy = message.pos_L_D_y
-        print("GetPos", "GetPos", Lux, Luy, Rux, Ruy, Rdx, Rdy, Ldx, Ldy)
-        return "我已收到城墙坐标"
-    end)
+    -- message_router:register_handler(sproto_obj:queryproto("PROTOCOL_NORMAL_POS_C_TO_S").tag, function(client, message)
+    --     local Lux = message.pos_L_U_x
+    --     local Luy = message.pos_L_U_y
+    --     local Rux = message.pos_R_U_x
+    --     local Ruy = message.pos_R_U_y
+    --     local Rdx = message.pos_R_D_x
+    --     local Rdy = message.pos_R_D_y
+    --     local Ldx = message.pos_L_D_x
+    --     local Ldy = message.pos_L_D_y
+    --     return "我已收到城墙坐标"
+    -- end)
 
 
 

@@ -68,7 +68,7 @@ function WSServer:handle_socket(id, protocol, addr)
 
     local handle = {
         connect = function(id)
-            skynet.tracelog("connect", string.format("ws connect from: %s", tostring(id)))
+            -- skynet.tracelog("connect", string.format("ws connect from: %s", tostring(id)))
             self.clients[id] = { id = id }
         end,
 

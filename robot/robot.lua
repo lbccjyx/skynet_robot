@@ -90,7 +90,7 @@ function Robot:start()
 end
 
 function Robot:schedule_next_message()
-
+    print("Robot:schedule_next_message")
 
     if not self.timer then return end
     

@@ -6,7 +6,7 @@ local online_users = {}  -- 存储在线用户的CUser实例
 local user_tokens = {}   -- 存储用户token
 
 function CMD.add_online_user(user_id, socket_id, agent_handle, token)
-    skynet.tracelog("dispatch", "user_mgr_service 收到命令: add_online_user")
+    -- skynet.tracelog("dispatch", "user_mgr_service 收到命令: add_online_user")
     
     -- 验证token
     if not token then

@@ -24,6 +24,7 @@ end
 
 function Robot:init()
     self.router:register_handler(1, function(client, message)
+        print("core robot.lua Robot:init()")
         -- 处理NormalPos消息
         local request = self.host:dispatch(message)
         local normalPos = request[2]

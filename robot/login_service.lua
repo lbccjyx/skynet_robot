@@ -81,7 +81,7 @@ end
 
 -- HTTP JSON响应
 local function json_response(id, code, data)
-    skynet.tracelog("response", string.format("准备发送响应 - fd: %d, code: %d, data: %s", id, code, json.encode(data)))
+    -- skynet.tracelog("response", string.format("准备发送响应 - fd: %d, code: %d, data: %s", id, code, json.encode(data)))
     local encoded = json.encode(data)
     local ok, err = httpd.write_response(
         sockethelper.writefunc(id),
@@ -94,33 +94,28 @@ local function json_response(id, code, data)
             ["Access-Control-Allow-Headers"] = "Content-Type"
         }
     )
-    if not ok then
-        skynet.tracelog("response", string.format("response error: fd = %d, %s", id, err))
-    else
-        skynet.tracelog("response", string.format("响应发送成功 - fd: %d", id))
-    end
     return ok
 end
 
 local function handle_login(id, params, agent_id)
-    skynet.tracelog("login", string.format("[1] 开始处理登录请求 - id: %s, agent_id: %s", id, agent_id))
+    -- skynet.tracelog("login", string.format("[1] 开始处理登录请求 - id: %s, agent_id: %s", id, agent_id))
     
     local username = params.username
     local password = params.password
-    skynet.tracelog("login", string.format("[2] 获取登录参数 - username: %s", username or "nil"))
+    -- skynet.tracelog("login", string.format("[2] 获取登录参数 - username: %s", username or "nil"))
     
     if not username or not password then
         skynet.tracelog("login", "[3] 用户名或密码为空")
         return json_response(id, 400, { success = false, message = "Missing username or password" })
     end
     
-    skynet.tracelog("login", "[4] 准备查询数据库")
+    -- skynet.tracelog("login", "[4] 准备查询数据库")
     local sql = string.format("SELECT user_id, user_name FROM d_user WHERE user_name='%s' AND user_password='%s'", 
         username, password)
-    skynet.tracelog("login", string.format("[5] SQL语句: %s", sql))
+    -- skynet.tracelog("login", string.format("[5] SQL语句: %s", sql))
     
     local res = db:query(sql)
-    skynet.tracelog("login", string.format("[6] 数据库查询结果数量: %d", #res))
+    -- skynet.tracelog("login", string.format("[6] 数据库查询结果数量: %d", #res))
     
     if #res > 0 then
         local user_id = res[1].user_id
@@ -128,25 +123,25 @@ local function handle_login(id, params, agent_id)
         skynet.tracelog("login", string.format("[7] 用户验证通过 - user_id: %s, user_name: %s", user_id, user_name))
 
         -- 获取用户管理服务地址
-        skynet.tracelog("login", "[8] 获取用户管理服务地址")
+        -- skynet.tracelog("login", "[8] 获取用户管理服务地址")
         local user_mgr_addr = tonumber(skynet.getenv("SKYNET_USER_MGR_ADDR"))
         if not user_mgr_addr then
             skynet.tracelog("login", "[9] 错误：未找到用户管理服务地址")
             return json_response(id, 500, { success = false, message = "Internal server error" })
         end
-        skynet.tracelog("login", string.format("[10] 用户管理服务地址: %s", user_mgr_addr))
+        -- skynet.tracelog("login", string.format("[10] 用户管理服务地址: %s", user_mgr_addr))
 
         -- 生成token
-        skynet.tracelog("login", "[11] 开始生成token")
+        -- skynet.tracelog("login", "[11] 开始生成token")
         local ok, token = pcall(skynet.call, user_mgr_addr, "lua", "generate_token", user_id)
         if not ok or not token then
             skynet.tracelog("login", string.format("[12] token生成失败: %s", token))
             return json_response(id, 500, { success = false, message = "Failed to generate token" })
         end
-        skynet.tracelog("login", string.format("[13] token生成成功: %s", token))
+        -- skynet.tracelog("login", string.format("[13] token生成成功: %s", token))
 
         -- 添加在线用户
-        skynet.tracelog("login", "[14] 开始添加在线用户")
+        -- skynet.tracelog("login", "[14] 开始添加在线用户")
         local add_ok = skynet.call(user_mgr_addr, "lua", "add_online_user", user_id, id, agent_id, token)
         if not add_ok then
             skynet.tracelog("login", string.format("[15] 添加在线用户失败 - user_id: %s", user_id))
@@ -155,7 +150,7 @@ local function handle_login(id, params, agent_id)
         skynet.tracelog("login", "[16] 添加在线用户成功")
         
         -- 获取sproto协议描述并Base64编码
-        skynet.tracelog("login", "[17] 开始获取sproto协议描述")
+        -- skynet.tracelog("login", "[17] 开始获取sproto协议描述")
         -- 直接使用原始的sproto内容
         if not load_proto() then           
             skynet.tracelog("login", "[17.1] 错误：sproto内容为空")
@@ -164,12 +159,12 @@ local function handle_login(id, params, agent_id)
         
         local ok2, sproto_desc = pcall(base64.encode, sproto_content)
         if not ok2 then
-            skynet.tracelog("login", string.format("[17.2] base64编码失败: %s", sproto_desc))
+            -- skynet.tracelog("login", string.format("[17.2] base64编码失败: %s", sproto_desc))
             return json_response(id, 500, { success = false, message = "Failed to encode sproto" })
         end
-        skynet.tracelog("login", string.format("[18] sproto协议描述长度: %d", #sproto_desc))
+        -- skynet.tracelog("login", string.format("[18] sproto协议描述长度: %d", #sproto_desc))
         
-        skynet.tracelog("login", "[19] 准备发送成功响应")
+        -- skynet.tracelog("login", "[19] 准备发送成功响应")
         -- 返回JSON响应，包含token和sproto_desc
         json_response(id, 200, {
             success = true,
@@ -180,7 +175,7 @@ local function handle_login(id, params, agent_id)
             sproto_version = "1.0.0",
             sproto_desc = sproto_desc
         })
-        skynet.tracelog("login", "[20] 登录流程完成")
+        -- skynet.tracelog("login", "[20] 登录流程完成")
     else
         skynet.tracelog("login", "[21] 用户名或密码错误")
         json_response(id, 401, { success = false, message = "Invalid username or password" })

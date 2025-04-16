@@ -75,7 +75,7 @@ skynet.start(function()
 
     skynet.error(string.format("Listen websocket port %d", ws_port))
     socket.start(id, function(id, addr)
-        skynet.tracelog("accept", string.format("accept client socket_id: %s addr: %s", id, addr))
+        -- skynet.tracelog("accept", string.format("accept client socket_id: %s addr: %s", id, addr))
         -- 使用socket命令处理websocket连接
         skynet.send(agent[balance], "lua", "socket", id, "ws", addr)
         balance = balance + 1
