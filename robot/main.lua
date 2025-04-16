@@ -5,7 +5,7 @@ local DBManager = require "core.db_manager"
 
 local function create_agent_pool()
     local agent = {}
-    for i = 1, 20 do
+    for i = 1, 1 do
         local ok, handle = pcall(skynet.newservice, "websocket_agent")
         if not ok then
             skynet.error("Failed to create websocket_agent:", handle)

@@ -7,8 +7,6 @@ local CMD = {}
 
 -- 初始化玩家的机器人管理器
 function CMD.init_manager(user_id, agent_handle, socket_id, host)
-    skynet.tracelog("robot_manager_service", string.format("Initializing manager for user %d", user_id))
-    
     -- 如果已存在，先停止并清理旧的
     if robot_managers[user_id] then
         robot_managers[user_id]:stop_all_robots()
