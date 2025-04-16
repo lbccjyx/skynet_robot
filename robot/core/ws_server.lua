@@ -85,13 +85,13 @@ function WSServer:handle_socket(id, protocol, addr)
             -- 使用pcall包装所有可能出错的操作
             local ok, err = pcall(function()
                 -- 解析二进制消息
-                skynet.tracelog("websocket", string.format("收到客户端消息，client_id: %d, msg_type: %s, msg_len: %d", id, msg_type, #msg))
+                -- skynet.tracelog("websocket", string.format("收到客户端消息，client_id: %d, msg_type: %s, msg_len: %d", id, msg_type, #msg))
                 
                 local proto_id = string.unpack("<i4", msg, 1)
                 local msg_len = string.unpack("<i4", msg, 5)
                 local raw_message = string.sub(msg, 9)
                 
-                skynet.tracelog("websocket", string.format("解析消息头，proto_id: %d, msg_len: %d", proto_id, msg_len))
+                -- skynet.tracelog("websocket", string.format("解析消息头，proto_id: %d, msg_len: %d", proto_id, msg_len))
                 
                 -- 获取协议名称
                 local proto = sproto_obj:queryproto(proto_id)
@@ -101,8 +101,8 @@ function WSServer:handle_socket(id, protocol, addr)
                 end
 
                 local proto_name = proto.name
-                skynet.tracelog("websocket", string.format("协议信息 - name:%s, tag:%d, has_req:%s, has_resp:%s",
-                proto_name, proto.tag, tostring(proto.request ~= nil), tostring(proto.response ~= nil)))     
+                -- skynet.tracelog("websocket", string.format("协议信息 - name:%s, tag:%d, has_req:%s, has_resp:%s",
+                -- proto_name, proto.tag, tostring(proto.request ~= nil), tostring(proto.response ~= nil)))     
                
                 -- -- 尝试打印原始消息的每个字节
                 -- skynet.tracelog("websocket", "原始消息字节:")
@@ -127,7 +127,7 @@ function WSServer:handle_socket(id, protocol, addr)
                     local response = handler(self.clients[id], decoded_message)
                     -- 默认收到消息之后要回复消息
                     if response then
-                        skynet.tracelog("websocket", string.format("发送响应消息，client_id: %d", id))
+                        -- skynet.tracelog("websocket", string.format("发送响应消息，client_id: %d", id))
                         self:send_message(id, "PROTOCOL_NORMAL_STR_RESP", {resp = response})
                     end
                 else

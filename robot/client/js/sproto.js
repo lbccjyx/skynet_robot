@@ -753,7 +753,6 @@ export var Sproto = {
         }
 
         function sproto_encode(type, buffer_idx, cb, ud) {
-            console.log("sproto encode called with type:", type);
             var args = new Object();
             var header_idx = buffer_idx;
             var data_idx = buffer_idx;
@@ -1062,7 +1061,6 @@ export var Sproto = {
         }
 
         sproto.encode = function(type, indata) {
-            console.log("sproto encode called with type:", type);
             var self = new Object();
             var st = sproto_type(type);
             var tbl_index = 2;

@@ -16,7 +16,7 @@ function CMD.add_online_user(user_id, socket_id, agent_handle, token)
 
     -- 检查token是否匹配
     if not user_tokens[token] or user_tokens[token] ~= user_id then
-        skynet.tracelog("add_online_user", string.format("Invalid token: %s for user: %s", token, user_id))
+        -- skynet.tracelog("add_online_user", string.format("Invalid token: %s for user: %s", token, user_id))
         return false
     end
     

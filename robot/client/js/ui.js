@@ -223,12 +223,6 @@ function initializeEventListeners() {
                         return;
                     }
                     
-                    console.log('准备发送消息:', {
-                        protocol: PROTOCOL.NORMAL_REQ,
-                        type: NORMAL_MSG_TYPE.WS_MESSAGE,
-                        message: message
-                    });
-                    
                     // 确保消息格式符合WsMessage结构
                     const wsMessage = {
                         type: NORMAL_MSG_TYPE.WS_MESSAGE,  // integer
@@ -258,12 +252,6 @@ function initializeEventListeners() {
                         console.log('消息内容为空，不发送');
                         return;
                     }
-                    
-                    console.log('准备发送消息:', {
-                        protocol: PROTOCOL.NORMAL_REQ,
-                        type: NORMAL_MSG_TYPE.WS_MESSAGE,
-                        message: message
-                    });
                     
                     // 确保消息格式符合WsMessage结构
                     const wsMessage = {

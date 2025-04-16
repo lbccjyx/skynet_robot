@@ -54,7 +54,7 @@ skynet.init(function()
         -- 获取用户ID
         local user_id = skynet.call(user_mgr_addr, "lua", "verify_token", token)
         if not user_id then
-            skynet.tracelog("handshake", string.format("Invalid token: %s", token))
+            -- skynet.tracelog("handshake", string.format("Invalid token: %s", token))
             return false
         end
 

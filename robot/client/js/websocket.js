@@ -101,11 +101,6 @@ function SendProtoMessage(protocolName, message) {
             }
         }
 
-        console.log('准备发送消息:', {
-            protocol: protocolName,
-            ...message
-        });
-
         // 1. 根据协议名称查找协议定义
         const protocol = sproto_protoquery_name(protocolName, sprotoInstance);
         if (!protocol) {
@@ -118,13 +113,6 @@ function SendProtoMessage(protocolName, message) {
             console.error(`协议 ${protocolName} 没有请求类型定义`);
             throw new Error(`协议 ${protocolName} 没有请求类型定义`);
         }
-        // 打印调试信息
-        console.log('找到协议:', {
-            name: protocol.p[0].name,
-            tag: protocol.tag,
-            requestType: protocol.p[0].name
-        });
-
         // 2. 编码消息
         const encodedMessage = sprotoInstance.encode( protocol.p[0].name, message);        if (!encodedMessage) {
             console.error('消息编码失败:', message);
@@ -142,12 +130,6 @@ function SendProtoMessage(protocolName, message) {
             return byte < 0 ? byte + 256 : byte;
         });
 
-        console.log('消息编码成功:', {
-            protocolTag: protocol.tag,
-            messageSize: encodedMessage.sz,
-            message: normalizedBuffer
-        });
-
         // 3. 构建二进制消息头 (8字节)
         const header = new ArrayBuffer(8);
         const headerView = new DataView(header);
@@ -163,16 +145,8 @@ function SendProtoMessage(protocolName, message) {
             fullMessage[8 + i] = normalizedBuffer[i];
         }
 
-        console.log('准备发送二进制数据:', {
-            totalSize: fullMessage.length,
-            headerSize: 8,
-            bodySize: encodedMessage.sz,
-            messageBytes: Array.from(fullMessage.slice(8))  // 打印消息内容用于调试
-        });
-
         // 5. 发送二进制消息
         ws.send(fullMessage.buffer);
-        console.log('消息发送成功');
 
     } catch (err) {
         console.error("发送proto消息失败:", err);
