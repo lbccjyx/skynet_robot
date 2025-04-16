@@ -185,10 +185,20 @@ function handleWsMessage(protoId, messageBody) {
     const protocol = findProtocolById(sprotoInstance, protoId);
     if (!protocol) {
         throw new Error(`Protocol not found: ${protoId}`);
+    }  
+    // 确保 messageBody 是有效的 Uint8Array
+    if (!(messageBody instanceof Uint8Array)) {
+        throw new Error("Invalid message body format");
     }
 
+    // 将 Uint8Array 转换为适合 sproto 解码的格式
+    const decodeData = {
+        buf: Array.from(messageBody), // 转换为普通数组
+        sz: messageBody.length
+    };
+
     // 解码 response（即 WsMessage 结构）
-    const result = sprotoInstance.decode(protocol.p[0].response, messageBody);
+    const result = sprotoInstance.decode(protocol.p[1].name, decodeData);
     if (!result) {
         throw new Error("Failed to decode message");
     }
@@ -209,6 +219,9 @@ function handleWsMessage(protoId, messageBody) {
         case PROTOCOL.ROBOT_POS:
             handleRobotPos(result);
             break;
+        case PROTOCOL.NORMAL_STR_RESP:
+            console.log("服务端消息:", result.resp);           
+        break;
         default:
             console.log("Unknown protocol:", protoId);
             break;

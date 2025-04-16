@@ -1,6 +1,10 @@
 
 .NormalResp{
-    resp 1:string
+    resp 1 : string
+}
+
+PROTOCOL_NORMAL_STR_RESP 100 {
+    response NormalResp
 }
 
 .package {

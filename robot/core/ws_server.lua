@@ -128,7 +128,7 @@ function WSServer:handle_socket(id, protocol, addr)
                     -- 默认收到消息之后要回复消息
                     if response then
                         skynet.tracelog("websocket", string.format("发送响应消息，client_id: %d", id))
-                        self:send_message(id, "NormalResp", {resp = response})
+                        self:send_message(id, "PROTOCOL_NORMAL_STR_RESP", {resp = response})
                     end
                 else
                     skynet.error(string.format("未找到协议处理器: %s (id: %d)", proto_name, proto_id))
@@ -184,15 +184,18 @@ function WSServer:send_message(client_id, proto_name, data)
     end
 
     local ok, err = pcall(function()
-        -- 使用sproto序列化数据
-        local message = sproto_obj:encode(proto_name, data)
+        -- 使用sproto序列化数据  sproto_obj:encode 错误的   sproto_obj:response_encode 正确的 
+        local message = sproto_obj:response_encode(proto_name, data)
         if not message then
             error("Failed to encode message with proto: " .. proto_name)
         end
         
         -- 获取协议ID
-        local proto_id = assert(sproto_obj.queryproto(proto_name).tag, "Unknown protocol: " .. proto_name)
-        
+        local proto = sproto_obj:queryproto(proto_name)
+        if not proto then
+            error("Protocol not found: " .. proto_name)
+        end
+        local proto_id = proto.tag
         -- 构建二进制消息：proto_id(4字节) + 消息长度(4字节) + 消息内容
         local resp_buffer = string.pack("<i4i4", proto_id, #message) .. message
         websocket.write(client_id, resp_buffer, "binary")
